@@ -123,4 +123,4 @@ install_client_man:	$(foreach file, $(CLIENT_MAN), $(file).gz)
 	    sed 's/.*\(.\)$$/\1/'`/$(manpage).gz ;)
 
 clean:
-	rm -f *~ \#*\# *.8 *.5 *.gz manpage.links manpage.refs
+	rm -f *~ \#*\# *.8 *.5 *.gz manpage.links manpage.refs manpage.log
