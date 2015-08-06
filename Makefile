@@ -1,13 +1,12 @@
 #
 #	"SystemImager"  
 #
-#   Copyright (C) 1999-2012 Brian Elliott Finley
+#   Copyright (C) 1999-2015 Brian Elliott Finley
 #   Copyright (C) 2001-2004 Hewlett-Packard Company <dannf@hp.com>
 #   
 #   Others who have contributed to this code:
 #   	Sean Dague <sean@dague.net>
 #
-#   $Id$
 # 	 vi: set filetype=make:
 #
 #   2012.03.09  Brian Elliott Finley
@@ -214,8 +213,7 @@ else
 	include config.inc
 # build everything, install nothing
 .PHONY:	all
-all:	kernel $(INITRD_DIR)/initrd.img manpages
-
+all:	$(INITRD_DIR)/initrd.img manpages
 
 endif
 #
@@ -224,7 +222,7 @@ endif
 ########################################################################
 
 
-binaries: $(BOEL_BINARIES_TARBALL) kernel $(INITRD_DIR)/initrd.img
+binaries: $(BOEL_BINARIES_TARBALL) $(INITRD_DIR)/initrd.img
 
 # All has been modified as docs don't build on non debian platforms
 #
@@ -381,25 +379,6 @@ install_common_libs:
 	mkdir -p $(LIBEXEC_DEST)
 	$(SI_INSTALL) -m 755 $(LIB_SRC)/confedit $(LIBEXEC_DEST)
 
-# checks the sized of the i386 kernel and initrd to make sure they'll fit 
-# on an autoinstall diskette
-.PHONY:	check_floppy_size
-check_floppy_size:	$(LINUX_IMAGE) $(INITRD_DIR)/initrd.img
-ifeq ($(ARCH), i386)
-	@### see if the kernel and ramdisk are larger than the size of a 1.44MB
-	@### floppy image, minus about 10k for syslinux stuff
-	@echo -n "Ramdisk + Kernel == "
-	@echo "`$(CHECK_FLOPPY_SIZE)`"
-	@echo "                    1454080 is the max that will fit."
-	@[ `$(CHECK_FLOPPY_SIZE)` -lt 1454081 ] || \
-	     (echo "" && \
-	      echo "************************************************" && \
-	      echo "Dammit.  The kernel and ramdisk are too large.  " && \
-	      echo "************************************************" && \
-	      exit 1)
-	@echo " - ok, that should fit on a floppy"
-endif
-
 # install the initscript & config files for the server
 .PHONY:	install_configs
 install_configs:
@@ -427,11 +406,6 @@ install_configs:
 	$(SI_INSTALL) -b -m 755 etc/init.d/systemimager-server-monitord		$(INITD)
 
 ########## END initrd ##########
-
-
-########## BEGIN dev_tarball ##########
-# XXX deprecated -- no longer needed with udev. -BEF- 2011.02.15
-########## END dev_tarball ##########
 
 
 ########## BEGIN man pages ##########
@@ -470,9 +444,6 @@ endif
 
 # pre-download the source to other packages that are needed by 
 # the build system
-.PHONY:	pre_download_source
-pre_download_source:	$(ALL_SOURCE)
-
 .PHONY:	get_source
 get_source:	$(ALL_SOURCE)
 
@@ -486,6 +457,21 @@ install:
 install_binaries:	install_kernel \
 			install_initrd \
 			install_initrd_template
+
+#
+#   Olivier -- I'm thinking that we have a script that can be run on
+#   demand to re-build the standard initrd template.  If it's working
+#   fine, we may not want to auto-rebuild it for someone.
+#
+#   On the other hand, I suppose we could have it preserve the existing
+#   template, and simply version the template dirs...  Hmm.  Will
+#   contemplate. -Brian :-)
+#
+# .PHONY: install_dracut
+# install_dracut:
+# 	$(SI_INSTALL) -d $(USR)/lib/dracut/modules.d/98systemimager
+# 	$(SI_INSTALL) -m 755 dracut/module-setup.sh $(USR)/lib/dracut/modules.d/98systemimager
+
 
 .PHONY:	complete_source_tarball
 complete_source_tarball:	$(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source.tar.bz2.sign
@@ -599,7 +585,7 @@ deb: $(TOPDIR)/tmp/systemimager-$(VERSION).tar.bz2
 
 # removes object files, docs, editor backup files, etc.
 .PHONY:	clean
-clean:	$(subst .rul,_clean,$(shell cd $(TOPDIR)/make.d && ls *.rul)) initrd_clean
+clean:	initrd_clean
 	-$(MAKE) -C $(MANPAGE_DIR) clean
 	-$(MAKE) -C $(MANUAL_DIR) clean
 
@@ -629,6 +615,10 @@ show_targets:
 	@echo
 	@echo Makefile targets you are probably most interested in:
 	@echo ---------------------------------------------------------------------
+	@echo "get_source"
+	@echo "    Useful to pre-download all source necessary for an offline"
+	@echo "    build.
+	@echo "	"
 	@echo "all"
 	@echo "    Build everything you need for your machine's architecture."
 	@echo "	"
@@ -639,10 +629,6 @@ show_targets:
 	@echo "    Install all files needed by a server."
 	@echo "	"
 	@echo "install_initrd"
-	@echo ""
-	@echo "pre_download_source"
-	@echo "    Download source tarballs, but don't build anything."
-	@echo "    Useful to prep for offline builds."
 	@echo ""
 	@echo "source_tarball"
 	@echo "    Make a source tarball for distribution."
@@ -669,6 +655,14 @@ show_targets:
 	@echo "show_build_deps"
 	@echo "    Shows the list of packages necessary for building on"
 	@echo "    various distributions and releases."
+	@echo
+	@echo "clean"
+	@echo "    Clean up everything, but leave source code tarballs"
+	@echo "    downloaded from the interweb."
+	@echo
+	@echo "dist_clean"
+	@echo "    Clean up everything, _and remove_ source code tarballs"
+	@echo "    downloaded from the interweb."
 	@echo
 	@echo "show_all_targets"
 	@echo "    Show all available targets."
