@@ -19,7 +19,8 @@
 #
 #   Variables
 #
-PATH=/sbin:/bin:/usr/bin:/usr/sbin:/tmp
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/tmp
+export PATH
 LD_LIBRARY_PATH=/lib
 SCRIPTS=scripts
 SCRIPTS_DIR=/scripts
@@ -238,7 +239,7 @@ count_loop() {
     sleep 1
   done
 
-  trap INT
+  #trap INT
 
   logmsg
 }
@@ -973,7 +974,7 @@ start_network() {
         ### END ether sleep ###
         
         # create directory to catch dhcp information
-        DHCLIENT_DIR="/var/state/dhcp"
+        DHCLIENT_DIR="/var/lib/dhclient"
         mkdir -p $DHCLIENT_DIR
         
         # New dhclient uses /sbin/dhclient-script that triggers /etc/dhcp/dhclient-exit-hooks
@@ -992,7 +993,7 @@ start_network() {
         
         # get info via dhcp
         logmsg
-        logmsg "dhclient"
+        logmsg "dhclient $DEVICE"
         dhclient $DEVICE
         if [ ! -s ${DHCLIENT_DIR}/dhclient.leases ]; then
             logmsg
@@ -1597,7 +1598,8 @@ send_monitor_msg() {
 
     # Get the client mac address.
     if [ -z "$mac" ]; then
-        mac=`ifconfig $DEVICE 2>/dev/null | sed -ne "s/.*HWaddr //p" | sed "s/ //g" | sed s/:/./g`
+        #mac=`ifconfig $DEVICE 2>/dev/null | sed -ne "s/.*HWaddr //p" | sed "s/ //g" | sed s/:/./g`
+        mac=`ip -o link show $DEVICE 2>/dev/null | grep -o -E '([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}' -m 1|grep -vi 'FF:FF:FF:FF:FF:FF' | sed -e 's/:/./g' -e 's/\(.*\)/\U\1/'`
     fi
 
     # Collect some special info only after proc file system is mounted.
@@ -1633,7 +1635,7 @@ send_monitor_msg() {
     send_msg=`echo "mac=$mac:ip=$IPADDR:host=$HOSTNAME:cpu=$cpu:ncpus=$ncpus:kernel=$kernel_name:mem=$mem:os=$IMAGENAME:tmpfs=$tmpfs:time=$time:$msg"`
 
     # Send data to monitor server.
-    echo "$send_msg" | nc $MONITOR_SERVER $MONITOR_PORT
+    echo "$send_msg" | ncat $MONITOR_SERVER $MONITOR_PORT
 }
 #
 ################################################################################
@@ -1677,7 +1679,7 @@ init_monitor_server() {
         MONITOR_CONSOLE=yes
     fi
     if [ "x$MONITOR_CONSOLE" = "xyes" ]; then
-        while :; do nc -p 8181 -l < /tmp/si_monitor.log; done &
+        while :; do ncat -p 8181 -l < /tmp/si_monitor.log; done &
     fi
 }
 #
