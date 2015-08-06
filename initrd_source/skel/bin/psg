@@ -1,4 +1,9 @@
 #!/bin/sh
+
+#
+# Copyright (C) 2003-2014  Brian E. Finley <brian@thefinleys.com>
+#
+
 for i in $@
 do
         ps -Af | grep -v grep | grep -v psg | egrep -i -- $i
