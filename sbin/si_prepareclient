@@ -665,7 +665,7 @@ unless ($image) {
     print "\nAutomatically create configuration file for systemconfigurator:\n" .
           "  >> /etc/systemconfig/systemconfig.conf\n";
     if (create_systemconfig_conf() < 0) {
-        print STDERR "WARNING: coulnd't create file /etc/systemconfig/systemconfig.conf (needed by systemconfigurator)\n";
+        print STDERR "WARNING: couldn't create file /etc/systemconfig/systemconfig.conf (needed by systemconfigurator)\n";
     }
 }
 
