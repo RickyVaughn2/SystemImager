@@ -1,7 +1,7 @@
 #
 #   "SystemImager" 
 #
-#   Copyright (C) 1999-2014 Brian Elliott Finley
+#   Copyright (C) 1999-2015 Brian Elliott Finley
 #
 #
 
@@ -1729,17 +1729,7 @@ sub _write_out_umount_commands {
     #
     $fs_by_mp{'/proc'} = "proc";
     $fs_by_mp{'/sys'} = "sysfs";
-
-    #
-    # If client uses devfs or udev, then unmount the bound /dev filesystem.
-    #
-    $xml_config = XMLin($file, keyattr => { boel => "+devstyle"} );
-    if( defined($xml_config->{boel}->{devstyle}) 
-        && (    ("$xml_config->{boel}->{devstyle}" eq "udev" )
-             or ("$xml_config->{boel}->{devstyle}" eq "devfs") )
-      ) {
-        $fs_by_mp{'/dev'} = "/dev";
-    }
+    $fs_by_mp{'/dev'} = "/dev";
 
     #
     # Cycle through the mount points in reverse and umount those filesystems.
@@ -2114,11 +2104,11 @@ sub create_autoinstall_script{
                 } elsif ($post_install eq "reboot") {
                     # reboot stuff
                     print $MASTER_SCRIPT "# reboot the autoinstall client\n";
-                    print $MASTER_SCRIPT "shutdown -r now\n";
+                    print $MASTER_SCRIPT "reboot -f\n";
                 } elsif ($post_install eq "shutdown") {
                     # shutdown stuff
                     print $MASTER_SCRIPT "# shutdown the autoinstall client\n";
-                    print $MASTER_SCRIPT "shutdown\n";
+                    print $MASTER_SCRIPT "poweroff -f\n";
                     print $MASTER_SCRIPT "\n";
                 } elsif ($post_install eq "kexec") {
                     # kexec imaged kernel
