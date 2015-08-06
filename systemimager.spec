@@ -7,10 +7,11 @@
 # by the VERSION file) when "make source_tarball" is executed.
 # Therefore, it can be set to any three digit number here.
 #
-%define ver      0.0.0
+%define ver 0.0.0
+
 # Set rel to 1 when is is a final release otherwise, set it to a 0.x number
 # This is convenient when final release need to upgrade "beta" releases.
-%define rel      0.20%{?dist}
+%define rel      0.1%{?dist}
 %define packager Bernard Li <bernard@vanhpc.org>
 #define prefix   /usr
 %define _build_all 1
@@ -39,11 +40,11 @@
 %define _build_arch ppc64-ps3
 %endif
 
-%if %is_suse
-%define python_xml python-xml
-%else
-%define python_xml PyXML
-%endif
+#if %is_suse
+#define python_xml python-xml
+#else
+#define python_xml PyXML
+#endif
 
 # Still use the correct lib even on fc-18+ where --target noarch sets %_libdir to /usr/lib even on x86_64 arch.
 %define static_libcrypt_a /usr/lib/libcrypt.a
@@ -66,6 +67,11 @@ Distribution: System Installation Suite
 BuildRequires: docbook-utils, dos2unix, flex, libtool, readline-devel, /usr/bin/wget, openssl-devel, gcc, gcc-c++, ncurses-devel, bc, rsync >= 2.4.6
 BuildRequires: libuuid-devel, device-mapper-devel, gperf, binutils-devel, pam-devel, quilt
 BuildRequires: lzop, glib2-devel >= 2.22.0
+BuildRequires: dracut
+BuildRequires: nc, xfsprogs, e2fsprogs, coreutils, tar, kbd, gzip, bzip2, util-linux, net-tools, iproute, parted
+%if ! 0%{?el6}
+BuildRequires: btrfs-progs
+%endif
 Requires: rsync >= 2.4.6, syslinux >= 1.48, libappconfig-perl, dosfstools, /usr/bin/perl
 #AutoReqProv: no
 
@@ -88,8 +94,6 @@ environments.
 
 %package server
 Summary: Software that automates Linux installs, software distribution, and production deployment.
-Version: %ver
-Release: %rel
 License: GPL
 Group: Applications/System
 BuildRoot: /tmp/%{name}-%{ver}-root
@@ -120,8 +124,6 @@ server.
 
 %package flamethrower
 Summary: Software that automates Linux installs, software distribution, and production deployment.
-Version: %ver
-Release: %rel
 License: GPL
 Group: Applications/System
 BuildRoot: /tmp/%{name}-%{ver}-root
@@ -152,8 +154,6 @@ installations over multicast.
 
 %package common
 Summary: Software that automates Linux installs, software distribution, and production deployment.
-Version: %ver
-Release: %rel
 License: GPL
 Group: Applications/System
 BuildRoot: /tmp/%{name}-%{ver}-root
@@ -184,8 +184,6 @@ and servers.
 
 %package client
 Summary: Software that automates Linux installs, software distribution, and production deployment.
-Version: %ver
-Release: %rel
 License: GPL
 Group: Applications/System
 BuildRoot: /tmp/%{name}-%{ver}-root
@@ -218,8 +216,6 @@ be imaged by a SystemImager server.
 
 %package %{_build_arch}boot-%{_boot_flavor}
 Summary: Software that automates Linux installs, software distribution, and production deployment.
-Version: %ver
-Release: %rel
 License: GPL
 Group: Applications/System
 BuildRoot: /tmp/%{name}-%{ver}-root
@@ -258,8 +254,6 @@ process.
 
 %package %{_build_arch}initrd_template
 Summary: Software that automates Linux installs, software distribution, and production deployment.
-Version: %ver
-Release: %rel
 License: GPL
 Group: Applications/System
 BuildRoot: /tmp/%{name}-%{ver}-root
@@ -267,7 +261,7 @@ BuildArch: noarch
 Packager: %packager
 URL: http://wiki.systemimager.org/
 Distribution: System Installation Suite
-BuildRequires: python, python-devel, %{python_xml}, %{static_libcrypt_a}
+#BuildRequires: python, python-devel, %{python_xml}, %{static_libcrypt_a}
 Requires: %{name}-%{_build_arch}boot-%{_boot_flavor} = %{version}
 Provides: %{name}-initrd_template = %{version}
 AutoReqProv: no
@@ -294,8 +288,6 @@ SystemImager autoinstall process.
 
 %package bittorrent
 Summary: Software that automates Linux installs, software distribution, and production deployment.
-Version: %ver
-Release: %rel
 License: GPL
 Group: Applications/System
 BuildRoot: /tmp/%{name}-%{ver}-root
@@ -325,13 +317,18 @@ The bittorrent package allows you to use the BitTorrent protocol to perform
 installations.
 
 %changelog
+* Mon Jan 26 2015 Olivier Lahaye <olivier.lahaye@cea.fr> 4.5.0-0.1
+- New boot-standard build and initrd_template using build OS materials.
+- Now builds initrd using dracut.
+- Supports systemd based initrd images.
+
 * Wed Jul 30 2014 Olivier Lahaye <olivier.lahaye@cea.fr> 4.3.0-0.20
 - Fixed script that reports rebooted status.
 
-* Wed Jul 18 2014 Olivier Lahaye <olivier.lahaye@cea.fr> 4.3.0-0.19
+* Fri Jul 18 2014 Olivier Lahaye <olivier.lahaye@cea.fr> 4.3.0-0.19
 - Reverted si_netbootmond wrong fix and fixed the man instead.
 
-* Tue Jul 17 2014 Olivier Lahaye <olivier.lahaye@cea.fr> 4.3.0-0.18
+* Thu Jul 17 2014 Olivier Lahaye <olivier.lahaye@cea.fr> 4.3.0-0.18
 - Fix si_netbootmond that refused to do its job.
 - SystemConfigurator disabled (currently broken)
 
@@ -545,7 +542,7 @@ installations.
 - Added %doc README.SystemImager_DHCP_options, README.ssh_support and
   TODO to systemimager-server package
 
-* Mon Jun 11 2006 Bernard Li <bli@bcgsc.ca>
+* Sun Jun 11 2006 Bernard Li <bli@bcgsc.ca>
 - New package: systemimager-imagemanip
 
 * Fri Jun 09 2006 Bernard Li <bli@bcgsc.ca>
@@ -614,10 +611,10 @@ installations.
 * Tue Aug 19 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.1.5-1
 - new upstream release
 
-* Tue Jul 14 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.1.4-1
+* Mon Jul 14 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.1.4-1
 - new upstream release
 
-* Tue Jul 09 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.1.3-1
+* Wed Jul 09 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.1.3-1
 - new upstream release
 
 * Tue Jul 08 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.1.2-5
@@ -636,35 +633,35 @@ installations.
 * Tue Jul 01 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.1.2-1
 - new upstream development release
 
-* Tue Apr 02 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.1-4
+* Wed Apr 02 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.1-4
 - fix mkautoinstallcd on ia64 - 751740
 
-* Tue Apr 02 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.1-3
+* Wed Apr 02 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.1-3
 - added a patch from bef that no longer sorts module names - 755463
 
-* Tue Apr 02 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.1-2
+* Wed Apr 02 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.1-2
 - remove eepro100 (but keep e100) so boel will fit on a floppy again
 
 * Sun Mar 30 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.1-1
 - new upstream bug-fix release
 
-* Sun Jan 08 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.0-2
+* Wed Jan 08 2003 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.0-2
 - various ia64 fixes
 - stop attempting to build ps manual
 
 * Sun Dec 08 2002 sis devel <sisuite-devel@lists.sourceforge.net> 3.0.0-1
 - new upstream release
 
-* Sun Nov 18 2002 dann frazier <dannf@dannf.org> 2.9.5-1
+* Mon Nov 18 2002 dann frazier <dannf@dannf.org> 2.9.5-1
 - new upstream release
 
 * Sun Oct 27 2002 dann frazier <dannf@dannf.org> 2.9.4-1
 - new upstream release
 
-* Thu Oct 13 2002 dann frazier <dannf@dannf.org> 2.9.3-2
+* Sun Oct 13 2002 dann frazier <dannf@dannf.org> 2.9.3-2
 - added code to migrate users to rsync stubs
 
-* Thu Oct 02 2002 dann frazier <dannf@dannf.org> 2.9.3-1
+* Wed Oct 02 2002 dann frazier <dannf@dannf.org> 2.9.3-1
 - new upstream release
 
 * Thu Sep 19 2002 Sean Dague <sean@dague.net> 2.9.1-1
@@ -687,7 +684,7 @@ installations.
 * Mon Nov  5 2001 Sean Dague <sean@dague.net> 2.0.0-4
 - Added build section for true SRPM ability
 
-* Mon Oct  28 2001 Sean Dague <sean@dague.net> 2.0.0-3
+* Sun Oct 28 2001 Sean Dague <sean@dague.net> 2.0.0-3
 - Added common package
 
 * Sat Oct 20 2001  Sean Dague <sean@dague.net> 2.0.0-2
@@ -979,6 +976,19 @@ else
 		%{_sysconfdir}/init.d/systemimager-server-bittorrent restart) || true
 fi
 
+%post %{_build_arch}boot-%{_boot_flavor}
+# Create default boot files
+KVER=$(uname -r)
+echo $KVER > %{_datarootdir}/systemimager/boot/%{_build_arch}/standard/version.txt
+cp /boot/vmlinuz-${KVER} %{_datarootdir}/systemimager/boot/%{_build_arch}/standard/kernel
+dracut --force --add systemimager --add network --no-hostonly --no-hostonly-cmdline %{_datarootdir}/systemimager/boot/%{_build_arch}/standard/initrd.img ${KVER}
+
+%preun %{_build_arch}boot-%{_boot_flavor}
+rm -f %{_datarootdir}/systemimager/boot/%{_build_arch}/standard/version.txt
+rm -f %{_datarootdir}/systemimager/boot/%{_build_arch}/standard/kernel
+rm -f %{_datarootdir}/systemimager/boot/%{_build_arch}/standard/initrd.img
+exit 0
+
 %files common
 %defattr(-, root, root)
 %{_bindir}/si_lsimage
@@ -1050,6 +1060,7 @@ fi
 %{_mandir}/man5/systemimager*
 %{_mandir}/man8/si_*
 %{_datarootdir}/systemimager/icons/*
+%{_prefix}/lib/dracut/modules.d/98systemimager
 
 %files client
 %defattr(-, root, root)
@@ -1083,10 +1094,9 @@ fi
 %defattr(-, root, root)
 %dir %{_datarootdir}/systemimager/boot/%{_build_arch}
 %dir %{_datarootdir}/systemimager/boot/%{_build_arch}/standard
-%{_datarootdir}/systemimager/boot/%{_build_arch}/standard/config
-%{_datarootdir}/systemimager/boot/%{_build_arch}/standard/initrd.img
-%{_datarootdir}/systemimager/boot/%{_build_arch}/standard/kernel
-#prefix/share/systemimager/boot/%{_build_arch}/standard/boel_binaries.tar.gz
+#%{_datarootdir}/systemimager/boot/%{_build_arch}/standard/initrd.img
+#%{_datarootdir}/systemimager/boot/%{_build_arch}/standard/kernel
+#%{_datarootdir}/systemimager/boot/%{_build_arch}/standard/version.txt
 
 %files %{_build_arch}initrd_template
 %defattr(-, root, root)
