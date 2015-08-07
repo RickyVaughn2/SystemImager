@@ -1,17 +1,16 @@
 #
 #	"SystemImager"  
 #
-#   Copyright (C) 1999-2012 Brian Elliott Finley
+#   Copyright (C) 1999-2015 Brian Elliott Finley
 #   Copyright (C) 2001-2004 Hewlett-Packard Company <dannf@hp.com>
 #   
 #   Others who have contributed to this code:
 #   	Sean Dague <sean@dague.net>
 #
-#   $Id$
 # 	 vi: set filetype=make:
 #
 #   2012.03.09  Brian Elliott Finley
-#   * Fix egrep regex so that e2fsprogs targets show with 'make show_all_targets'
+#   * Fix egrep regex so that e2fsprogs targets show with 'make show_targets_all'
 #
 #
 #   This program is free software; you can redistribute it and/or modify
@@ -49,9 +48,9 @@
 #
 #   o web gui pages:            /usr/share/systemimager/web-gui/
 #
-#   o kernels:                  /usr/share/systemimager/boot/`arch`/flavor/
-#   o initrd.img:               /usr/share/systemimager/boot/`arch`/flavor/
-#   o boel_binaries.tar.gz:     /usr/share/systemimager/boot/`arch`/flavor/
+#   o kernels:                  /usr/share/systemimager/boot/`arch`/$flavor/
+#   o initrd.img:               /usr/share/systemimager/boot/`arch`/$flavor/
+#   o boel_binaries.tar.gz:     /usr/share/systemimager/boot/`arch`/$flavor/
 #
 #   o perl libraries:           /%{perl_vendorlib}
 #
@@ -212,7 +211,7 @@ else
 	include config.inc
 # build everything, install nothing
 .PHONY:	all
-all:	kernel $(INITRD_DIR)/initrd.img manpages
+all:	manpages
 
 
 endif
@@ -222,23 +221,8 @@ endif
 ########################################################################
 
 
-binaries: $(BOEL_BINARIES_TARBALL) kernel $(INITRD_DIR)/initrd.img
+binaries: $(BOEL_BINARIES_TARBALL)
 
-# All has been modified as docs don't build on non debian platforms
-#
-#all:	$(BOEL_BINARIES_TARBALL) kernel $(INITRD_DIR)/initrd.img docs manpages
-
-#
-# Now include the other targets.  Some of these may have order dependencies.
-# Order as appropriate. -BEF-
-#
-# Why does ordered dependencies matter? Make will read all these
-# snippets before it evaluates the rule. If there are dependencies caused
-# by setting a variable in one and using it in another, then that should be
-# abstracted out. Its much more robust to include *.rul... -dannf
-#
-include $(TOPDIR)/make.d/kernel.rul
-include $(TOPDIR)/initrd_source/initrd.rul
 
 # a complete server install
 .PHONY:	install_server_all
@@ -462,9 +446,7 @@ install:
 	@echo ''
 
 .PHONY:	install_binaries
-install_binaries:	install_kernel \
-			install_initrd \
-			install_initrd_template
+install_binaries:	install_initrd_template
 
 .PHONY:	complete_source_tarball
 complete_source_tarball:	$(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source.tar.bz2.sign
@@ -485,8 +467,6 @@ $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source.tar.bz2: systemimager.spec
 	$(MAKE) -C $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source get_source
 	#
 	# Make sure we've got all kernel source.  NOTE:  The egrep -v '-' bit is so that we don't include customized kernels (Ie: -ydl).
-	$(foreach linux_version, $(shell grep 'LINUX_VERSION =' make.d/kernel.rul | egrep -v '(^#|-)' | sort -u | perl -pi -e 's#.*= ##'), \
-		$(GETSOURCE) $(shell dirname $(LINUX_URL))/linux-$(linux_version).tar.bz2 $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source/src;)
 	$(MAKE) -C $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source clean
 ifeq ($(UNSTABLE), 1)
 	if [ -f README.unstable ]; then \
@@ -550,12 +530,8 @@ rpms: rpm
 rpm: $(TOPDIR)/tmp/systemimager-$(VERSION).tar.bz2 $(TOPDIR)/systemimager.spec
 	rpmbuild -tb $(TOPDIR)/tmp/systemimager-$(VERSION).tar.bz2
 
-# make the debs for systemimager
 #
-# I wonder if installing libpam-dev would eliminate the need for
-# "--disable-login --disable-su" in  initrd_source/make.d/util-linux.rul
-# ?? -BEF-  If so, we should add libpam-dev to UBUNTU_PRECISE_BUILD_DEPS
-# in initrd_source/make.d/util-linux.rul.
+# make the debs for systemimager
 #
 UBUNTU_PRECISE_BUILD_DEPS += dos2unix docbook-utils libncurses-dev
 .PHONY: deb debs
@@ -578,7 +554,7 @@ deb: $(TOPDIR)/tmp/systemimager-$(VERSION).tar.bz2
 
 # removes object files, docs, editor backup files, etc.
 .PHONY:	clean
-clean:	$(subst .rul,_clean,$(shell cd $(TOPDIR)/make.d && ls *.rul)) initrd_clean
+clean:	$(subst .rul,_clean,$(shell cd $(TOPDIR)/make.d && ls *.rul))
 	-$(MAKE) -C $(MANPAGE_DIR) clean
 	-$(MAKE) -C $(MANUAL_DIR) clean
 
@@ -617,7 +593,7 @@ show_targets:
 	@echo "install_server_all"
 	@echo "    Install all files needed by a server."
 	@echo "	"
-	@echo "install_initrd"
+	@echo "install_initrd_template"
 	@echo ""
 	@echo "pre_download_source"
 	@echo "    Download source tarballs, but don't build anything."
@@ -683,9 +659,11 @@ show_build_deps:
 	@echo "   choose."
 	@echo
 
-.PHONY:	show_all_targets
 SHOW_TARGETS_ALL_MAKEFILES = $(shell find . make.d/ initrd_source/ initrd_source/make.d/  -maxdepth 1 -name 'Makefile' -or -name '*.rul' )
-show_all_targets:
+.PHONY:	show_all_targets
+show_all_targets: show_targets_all
+.PHONY:	show_targets_all
+show_targets_all:
 	@echo All Available Targets Include:
 	@echo ---------------------------------------------------------------------
 	@cat $(SHOW_TARGETS_ALL_MAKEFILES) | egrep '^[a-zA-Z0-9_]+:' | sed 's/:.*//' | sort -u
