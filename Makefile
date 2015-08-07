@@ -48,9 +48,9 @@
 #
 #   o web gui pages:            /usr/share/systemimager/web-gui/
 #
-#   o kernels:                  /usr/share/systemimager/boot/`arch`/flavor/
-#   o initrd.img:               /usr/share/systemimager/boot/`arch`/flavor/
-#   o boel_binaries.tar.gz:     /usr/share/systemimager/boot/`arch`/flavor/
+#   o kernels:                  /usr/share/systemimager/boot/`arch`/$flavor/
+#   o initrd.img:               /usr/share/systemimager/boot/`arch`/$flavor/
+#   o boel_binaries.tar.gz:     /usr/share/systemimager/boot/`arch`/$flavor/
 #
 #   o perl libraries:           /%{perl_vendorlib}
 #
@@ -237,7 +237,6 @@ binaries: $(BOEL_BINARIES_TARBALL) $(INITRD_DIR)/initrd.img
 # by setting a variable in one and using it in another, then that should be
 # abstracted out. Its much more robust to include *.rul... -dannf
 #
-include $(TOPDIR)/make.d/kernel.rul
 include $(TOPDIR)/initrd_source/initrd.rul
 
 # a complete server install

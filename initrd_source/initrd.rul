@@ -1,10 +1,9 @@
 #
 #	"SystemImager"
 #
-#   $Id: initrd.rul 4573 2012-12-18 12:42:42Z olahaye74 $
 #    vi: set filetype=make:
 #
-#	Copyright (C) 1999-2011 Brian Elliott Finley
+#	Copyright (C) 1999-2015 Brian Elliott Finley
 #	Copyright (C) 2002-2004 dann frazier <dannf@hp.com>
 #
 #	Others who have contributed to this code:
@@ -36,272 +35,202 @@ INITRD_BINARIES = $(shell file \
 							| egrep ':.*ELF ' \
 							| perl -pi -e 's/:.*//')
 
-## Should initrd.img be gzipped?
-INITRD_COMPRESS = yes
-ifdef IS_PPC64
-INITRD_COMPRESS = no
-endif
-ifeq ($(ARCH),alpha)
-INITRD_COMPRESS = no
-endif
-
 STAMP_DIR = $(INITRD_SRC_DIR)
 
-#INITRD_BUILD_DIR = $(INITRD_DIR)/build_dir
+INITRD_BUILD_DIR = $(INITRD_DIR)/build_dir
 
 SKEL_FILES = $(shell find $(INITRD_DIR)/skel \
 						-not -regex '.*/.svn.*' -and \
 						-not -regex '.*/.svn')
 
-MKCRAMFS = $(shell which mkcramfs || which mkfs.cramfs || \
-             echo MKCRAMFS_WAS_NOT_FOUND_IN_YOUR_PATH)
-
 #
 # Order is relevant for certain components, so re-order as is appropriate. -BEF-
 #
-include $(INITRD_DIR)/make.d/e2fsprogs.rul
-include $(INITRD_DIR)/make.d/dosfstools.rul
-include $(INITRD_DIR)/make.d/hfsutils.rul
-include $(INITRD_DIR)/make.d/jfsutils.rul
-include $(INITRD_DIR)/make.d/reiserfsprogs.rul
-include $(INITRD_DIR)/make.d/xfsprogs.rul
-include $(INITRD_DIR)/make.d/lvm.rul
-include $(INITRD_DIR)/make.d/bc.rul
 include $(INITRD_DIR)/make.d/cx_freeze.rul
 include $(INITRD_DIR)/make.d/bittorrent.rul
-include $(INITRD_DIR)/make.d/busybox.rul
-include $(INITRD_DIR)/make.d/dhclient.rul
-include $(INITRD_DIR)/make.d/lsb.rul
-include $(INITRD_DIR)/make.d/rsync.rul
-include $(INITRD_DIR)/make.d/tar.rul
-include $(INITRD_DIR)/make.d/sysvinit.rul
-include $(INITRD_DIR)/make.d/util-linux.rul 		# must be before parted to build parted against the uuid libs
-include $(INITRD_DIR)/make.d/kmod.rul			# Needed by udev; replaces module-init-tools
-include $(INITRD_DIR)/make.d/udev.rul			# must be after util-linux (need libblkid)
 include $(INITRD_DIR)/make.d/udpcast.rul
-include $(INITRD_DIR)/make.d/parted.rul
-include $(INITRD_DIR)/make.d/zlib.rul
-include $(INITRD_DIR)/make.d/gzip.rul
-include $(INITRD_DIR)/make.d/mdadm.rul
-include $(INITRD_DIR)/make.d/openssl.rul
-include $(INITRD_DIR)/make.d/openssh.rul
-include $(INITRD_DIR)/make.d/kexec-tools.rul
-include $(INITRD_DIR)/make.d/coreutils.rul
-# OL: Module-init-tools is obsolete.
-# include $(INITRD_DIR)/make.d/module-init-tools.rul	# Must be after busybox to overwrite incompatible modprobe
+include $(INITRD_DIR)/make.d/busybox.rul
+include $(INITRD_DIR)/make.d/hfsutils.rul
 
-PHONY += build_dir 
-build_dir:	$(INITRD_BUILD_DIR).build
 
 $(INITRD_BUILD_DIR).skel:	$(INITRD_DIR)/initrd.rul
 	rm -fr $(INITRD_BUILD_DIR)
 	mkdir -p $(INITRD_BUILD_DIR)
 	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/bin
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/dev
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/etc
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/etc/ssh
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/etc/default
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/etc/init.d
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/lib
-	
-	# If build OS has /lib64, link it to /lib
-	test ! -d /lib64 || ( cd $(INITRD_BUILD_DIR) && ln -s lib lib64 )
-	
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/proc
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/root
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/sbin
-	mkdir -p -m 1777 $(INITRD_BUILD_DIR)/tmp
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/usr
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/usr/bin
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/usr/sbin
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/var
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/var/db	# For dhclient leases.
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/var/log	# For udev log (tmpfs mountpoint)
-	mkdir -p -m 0755 $(INITRD_BUILD_DIR)/run	# For udev
-	#mkdir -p -m 0755 $(INITRD_BUILD_DIR)/var/run	# Fur udev (tmpfs mountpoint)
-	( cd $(INITRD_BUILD_DIR)/var && ln -s /run . )
-
-	#XXX# Need to find some way to do these outside of the build. -BEF-
-	mknod -m 0660 $(INITRD_BUILD_DIR)/dev/tty0 c 4 0
-	mknod -m 0660 $(INITRD_BUILD_DIR)/dev/tty1 c 4 1
-	mknod -m 0660 $(INITRD_BUILD_DIR)/dev/tty2 c 4 2
-	mknod -m 0660 $(INITRD_BUILD_DIR)/dev/tty3 c 4 3
-	mknod -m 0660 $(INITRD_BUILD_DIR)/dev/tty4 c 4 4
-	mknod -m 0660 $(INITRD_BUILD_DIR)/dev/tty5 c 4 5
-	mknod -m 0660 $(INITRD_BUILD_DIR)/dev/tty6 c 4 6
-	
-	# Ugly hack to have our own includes.(needed for udev that includes linux includes).
-	# kernel headers and components includes will be installed in there.
-	# build of utils will use this include dir to match kernel they will be running on
-	# Once the build is finished, this include dir will be removed before creating the initrd.img
-	(cd /usr; tar cpf - include) | (cd $(INITRD_BUILD_DIR)/usr; tar xpvf -)
 	touch $@
 
-$(INITRD_BUILD_DIR).prep: $(INITRD_BUILD_DIR).skel $(SKEL_FILES) $(SRC_DIR)/modules_build-stamp $(INITRD_DIR)/kernel_headers.prep
+$(INITRD_BUILD_DIR).prep: $(INITRD_BUILD_DIR).skel $(SKEL_FILES)
 	touch $@
 
-
-$(INITRD_BUILD_DIR).build:  $(INITRD_BUILD_DIR).prep		\
-								$(LSB_DIR).build			\
-								$(CX_FREEZE_DIR).build 			\
-								$(BC_DIR).install			\
-								$(BITTORRENT_DIR).install 		\
-								$(BUSYBOX_DIR).install			\
-								$(DHCLIENT_DIR).install			\
-								$(DOSFSTOOLS_DIR).install		\
-								$(E2FSPROGS_DIR).install		\
-								$(GZIP_DIR).install			\
-								$(HFSUTILS_DIR).install			\
-								$(JFSUTILS_DIR).install			\
-								$(KEXEC_TOOLS_DIR).install		\
-								$(LVM_DIR).install			\
-								$(MDADM_DIR).install			\
-								$(OPENSSH_DIR).install			\
-								$(OPENSSL_DIR).install			\
-								$(REISERFSPROGS_DIR).install		\
-								$(RSYNC_DIR).install			\
-								$(SYSVINIT_DIR).install			\
-								$(TAR_DIR).install			\
-								$(KMOD_DIR).install			\
-								$(UDEV_DIR).install			\
-								$(UDPCAST_DIR).install			\
-								$(UTIL_LINUX_DIR).install		\
-								$(PARTED_DIR).install			\
-								$(XFSPROGS_DIR).install			\
-								$(COREUTILS_DIR).install		\
-								$(ZLIB_DIR).install
-
-	# Copy over the standard libs. -BEF-
-	test -z "$(echo /lib/ld*)" || cp -a /lib/ld*   $(INITRD_BUILD_DIR)/lib
-	test ! -d /lib64 || cp -a /lib64/ld* $(INITRD_BUILD_DIR)/lib64
-	# Remove useless stuffs (man, translation, includes, ...)
-	( cd $(INITRD_BUILD_DIR) && /bin/rm -rf share usr/share usr/include lib/*.a )
-	# Explicitly include more w/mklibs -L.  -dawild-
-	echo "Copying /lib*/libnss* to $(INITRD_BUILD_DIR)/lib*"
-ifeq ($(ARCH),x86_64)
-	( cd $(INITRD_BUILD_DIR) && \
-		$(INITRD_DIR)/mklibs.bef -L $(INITRD_SRC_DIR)/$(E2FSPROGS_DIR)/lib:/lib64:/usr/lib64:/lib:/usr/lib -v -d . ./*bin/* )
-	# copy libnss files as they are not automatically included
-	#cp -a /lib64/libnss* $(INITRD_BUILD_DIR)/lib64
-	for lib in /lib64/libnss* ; do \
-		if test ! -L $$lib ; then \
-			cp -a $$lib $(INITRD_BUILD_DIR)/lib64/ ;\
-			echo "Copying $$lib from system to initrd" ;\
-		fi ;\
-	done
-else
-	( cd $(INITRD_BUILD_DIR) && \
-		$(INITRD_DIR)/mklibs.bef -L $(INITRD_SRC_DIR)/$(E2FSPROGS_DIR)/lib:/lib:/usr/lib -v -d . ./*bin/* )
-	# copy libnss files as they are not automatically included
-	#cp -a /lib/libnss* $(INITRD_BUILD_DIR)/lib
-	for lib in /lib/libnss* ; do \
-		if test ! -L $$lib ; then \
-			cp -a $$lib $(INITRD_BUILD_DIR)/lib ;\
-			echo "Copying $$lib from system to initrd" ;\
-		fi ;\
-	done
-endif
-	# Recompute the links for dynamic libs.
-	echo /lib > $(INITRD_BUILD_DIR)/etc/ld.so.conf
-	ldconfig -r $(INITRD_BUILD_DIR)
-	# Do we still need to undo prelinking? -BEF-
-	## Undo prelinking. -AR-
-	#[ -x `which prelink` ] && (find $(INITRD_BUILD_DIR) -type f -exec prelink -u {} \; 2>&1 | grep -v "does not have .gnu.prelink_undo section\|is not an ELF file") || true
-
-	# Strip 'em. -BEF-
-	strip $(INITRD_BINARIES)
-
+PHONY += build_dir 
+build_dir:	$(INITRD_BUILD_DIR).build
+$(INITRD_BUILD_DIR).build:  \
+			$(INITRD_BUILD_DIR).prep \
+			$(CX_FREEZE_DIR).build \
+			$(BITTORRENT_DIR).install \
+			$(UDPCAST_DIR).install \
+			$(BUSYBOX_DIR).install \
+			$(HFSUTILS_DIR).install
+	
 	# BitTorrent binaries must not be stripped. -AR-
-	cd $(INITRD_BUILD_DIR)/bin && ln -s ../lib/bittorrent/torrentinfo-console
-	cd $(INITRD_BUILD_DIR)/bin && ln -s ../lib/bittorrent/bittorrent-console
-
+	test -e $(INITRD_BUILD_DIR)/bin/torrentinfo-console || (cd $(INITRD_BUILD_DIR)/bin && ln -s ../lib/bittorrent/torrentinfo-console)
+	test -e $(INITRD_BUILD_DIR)/bin/bittorrent-console  || (cd $(INITRD_BUILD_DIR)/bin && ln -s ../lib/bittorrent/bittorrent-console)
+	
 	# lsb init functions needed by udev init script
-	install -m 755 -d $(INITRD_BUILD_DIR)/lib/lsb
-	install -m 644 $(LSB_DIR)/init-functions $(INITRD_BUILD_DIR)/lib/lsb
-
 	# Copy over text files from the skel directory.
 	cp -a $(INITRD_DIR)/skel/* $(INITRD_BUILD_DIR)
-
-	# The following rule gets rid of virtual consoles on 
-	# platforms that don't have them.
-ifeq ($(ARCH),ppc64-iSeries)
-	cat $(INITRD_DIR)/skel/etc/inittab | grep -v ^vc\/ > \
-		$(INITRD_BUILD_DIR)/etc/inittab
-endif
-
-	$(SI_INSTALL) -m 755 $(INITRD_DIR)/skel/etc/init.d/rcS \
-	  $(INITRD_BUILD_DIR)/etc/init.d/rcS
-
-	$(SI_INSTALL) -m 755 $(INITRD_DIR)/skel/etc/init.d/functions \
-	  $(INITRD_BUILD_DIR)/etc/init.d/functions
-	#
-	#
-	# install kernel modules. -BEF-
-	#
-	$(MAKE) -C $(LINUX_SRC) modules_install INSTALL_MOD_PATH="$(INITRD_BUILD_DIR)"
+	
+	# Set defaut.target for systemd.
+	cd $(INITRD_BUILD_DIR)/usr/lib/systemd/system && ln -sf systemimager.target default.target
 	
 	# Copy over modules required prior to retrieving the autoinstall
 	# binaries tarball. -BEF-
 	cp -a $(INITRD_DIR)/my_modules $(INITRD_BUILD_DIR)
 	
-	#
-	# If the build system doesn't have module-init-tools installed, and
-	# our modules need it, we need to use the depmod we built.  For now we'll
-	# just say, you need to have module-init-tools installed for building.
-	#
-	# We could get fancy at some point, and test for it with something like this:
-	#
-	# 	depmod --version | grep -q module-init-tools
-	#
-	# and build it if it's not there.
-	#
-	# The find command is to figure out the kernel version string
-	#
-	KERNEL_VERSION=`find $(INITRD_BUILD_DIR)/lib/modules -mindepth 1 -maxdepth 1 -type d -printf "%f"` ; \
-	depmod -b $(INITRD_BUILD_DIR) $$KERNEL_VERSION
-	
-	#
-	# get rid of build, which may exist as a link to the kernel source directory (won't exist in the BOEL initrd anyway). -BEF-
-	rm -f "$(INITRD_BUILD_DIR)/lib/modules/*/build"
-
-	#
-	# get rid of source, which may also exist as a link to the kernel source directory (won't exist in the BOEL initrd anyway). -BEF-
-	rm -f "$(INITRD_BUILD_DIR)/lib/modules/*/source"
-	
-	#
-	# Clear out SVN cruft.
-	find $(INITRD_BUILD_DIR) -depth -type d -name .svn | xargs rm -rf
-	mkdir -p $(INITRD_BUILD_DIR)/new_root
-
 	touch $@
 
+#
+# Binaries to be copied in for the auto-install client initrd template from the build-host
+#
+E2FSPROGS 	= mke2fs mkfs.ext2 mkfs.ext3 mkfs.ext4 mklost+found resize2fs tune2fs e2fsck
+XFSPROGS 	= e2fsck mkfs.xfs
+JFSPROGS	= jfs_mkfs jfs_tune
+DOSFSTOOLS 	= dosfsck dosfslabel fatlabel fsck.fat fsck.msdos fsck.vfat mkdosfs mkfs.fat mkfs.msdos mkfs.vfat
+BTRFSUTILS 	= btrfs btrfsck btrfstune fsck.btrfs mkfs.btrfs
+COREUTILS 	= cut date echo env sort test false true [ expr head install tail tee tr uniq wc 
+OTHERUTILS 	= bc gzip bzip2 rsync parted loadkeys clear reset stty tty kexec ipcalc
+SYSTEMDUTILS 	= systemd-cat
+OPTUTILS 	= depmod strace
 
-PHONY += initrd.img
-initrd.img:	$(INITRD_DIR)/initrd.img
+#
+# Uncomment these individually if _NOT_ building the tools they
+# represent. -BEF-
+#
+#BUSYBOX = setserial iostat sed rev hostname egrep conspy vi kill dnsdomainname busybox more mpstat ping dmesg fgrep umount base64 ash sh grep ps mount tar init mkswap rmmod syslogd bootchartd blockdev swapon pivot_root makedevs halt lsmod fdisk modinfo ifconfig insmod reboot poweroff modprobe switch_root route klogd swapoff killall nc eject uptime whois pmap fgconsole smemcap xz unxz wget lsof groups xzcat flock sha3sum logger nslookup time awk find less pstree pwdx which ubiattach ubidetach ubimkvol powertop ubiupdatevol nbd-client ubirsvol ubirmvol nanddump nandwrite
+#CX_FREEZE
+#BITTORRENT
+#UDPCAST = udp-receiver
+#HFSUTILS = fsck.hfs hattrib hcd hcopy hdel hdir hformat hfs hfsck hls hmkdir hmount hpwd hrename hrmdir humount hvol
 
-ifeq ($(INITRD_COMPRESS),yes)
-$(INITRD_DIR)/initrd.img:	$(INITRD_DIR)/initrd
-	gzip -9 -n < $(INITRD_DIR)/initrd > $(INITRD_DIR)/initrd.img
+PHONY += test_for_initrd_binaries
+test_for_initrd_binaries:
+	for binary in $(INITRD_BINARIES) ; do \
+        which $$binary || (echo ERROR: Please install $$binary! ; exit 1); \
+    done
+
+INITRD_BINARIES = \
+	$(E2FSPROGS) \
+	$(XFSPROGS) \
+	$(JFSPROGS) \
+	$(DOSFSTOOLS) \
+	$(BTRFSUTILS) \
+	$(COREUTILS) \
+	$(OTHERUTILS) \
+	$(SYSTEMDUTILS) \
+	$(OPTUTILS) \
+	$(HFSUTILS)
+
+# Appropriate for a build in a CentOS based Docker container (or CentOS native). -BEF-
+KVER = $(shell rpm -qa --queryformat "%{VERSION}-%{RELEASE}.%{ARCH}\n" kernel)
+
+#
+# Consider options for this...  Auto-detect?  Or allow specification on
+# command line?  "make BUILD_IN_CONTAINER=no server_all".  Consider
+# packaging requirements from Debian and RHEL.
+#
+# Maybe the best idea is to always use the image server's binaries, but
+# to use dracut from a container.
+#
+# Alternately, don't include any binaries with the initial dracut
+# initrd, but rather just treat it as a template.  Then have a script
+# that's run from the imageserver to collect all the binaries and
+# modules, and put them all together on the imageserver.  This would
+# address the Debian concern of shipping a binary in a package that
+# wasn't built as part of that package.  XXX -BEF-
+#
+# Force to use container for now... -BEF-
+BUILD_IN_CONTAINER = yes
+ifeq ($(BUILD_IN_CONTAINER),yes)
+INITRD_DEPS = build_dir build_container
+DRACUT_CMD = docker run --rm --interactive --tty -v $(TOPDIR):/usr/src/systemimager \
+		-h systemimager-build-container  $(DOCKER_IMAGE_NAME) \
+        make -C /usr/src/systemimager dracut_initrd
 else
-$(INITRD_DIR)/initrd.img:       $(INITRD_DIR)/initrd
-	cp -a $(INITRD_DIR)/initrd $(INITRD_DIR)/initrd.img
+INITRD_DEPS = build_dir
+DRACUT_CMD = make dracut_initrd
 endif
 
-
 PHONY += initrd
-initrd:	$(INITRD_DIR)/initrd
+initrd:  initrd.img
+PHONY += initrd.img
+initrd.img:	$(INITRD_DIR)/initrd.img
+$(INITRD_DIR)/initrd.img:	$(INITRD_DEPS)
+	$(DRACUT_CMD)
 
+PHONY += dracut_initrd
+dracut_initrd:
+	dracut --force \
+		--install "$(INITRD_BINARIES)" \
+		--filesystems "vfat msdos fat ext2 ext3 ext4 xfs jfs hfs reiserfs nfs" \
+		--include $(INITRD_BUILD_DIR) / \
+		--no-hostonly \
+		--no-hostonly-cmdline \
+		--add network \
+		--add syslog \
+		--add debug \
+		--omit usrmount \
+		$(INITRD_DIR)/initrd.img $(KVER)
+	
 #
-#	  NOTE:  we don't want the initrd target to use the installed template
-#		dir, as it could complicate distribution -- you might have
-#		modified files in the template_dir, that aren't removed with a
-#		'make install_template_dir', that you don't want released as
-#		part of the distribution. -BEF-
+#	Prep a docker container with a known distro (CentOS 7 initially)
+#	that can be used to build a consistent autoinstall client regardless
+#	of the build host.
 #
-$(INITRD_DIR)/initrd:	$(INITRD_BUILD_DIR).build 
-	#XXX -BEF- No more cramfs -- now initramfs. :-)
-	cd $(INITRD_BUILD_DIR) && find . | cpio --quiet -H newc -o -n > $(INITRD_DIR)/initrd
+DOCKERFILE_DIR = $(INITRD_SRC_DIR)/systemimager-build-container
+DOCKERFILE = $(DOCKERFILE_DIR)/Dockerfile
+DOCKER_IMAGE_NAME = systemimager/initrd-builder
+PHONY += build_container
+build_container: docker_build_container
+PHONY += docker_build_container
+docker_build_container: $(STAMP_DIR)/docker_build_container.build
+$(STAMP_DIR)/docker_build_container.build:  $(INITRD_DIR)/initrd.rul
+	mkdir -p $(DOCKERFILE_DIR)
+	echo "FROM centos:7" \
+		> $(DOCKERFILE)
+	echo "MAINTAINER Brian Elliott Finley <brian@thefinleys.com>" \
+		>> $(DOCKERFILE)
+	echo "" \
+		>> $(DOCKERFILE)
+	echo "# Things to make life easier if tweaking" \
+		>> $(DOCKERFILE)
+	echo "RUN yum update -y" \
+		>> $(DOCKERFILE)
+	echo "RUN yum install -y vim man git" \
+		>> $(DOCKERFILE)
+	echo "RUN yum install -y mlocate && updatedb" \
+		>> $(DOCKERFILE)
+	echo "" \
+		>> $(DOCKERFILE)
+	echo "# Minimal commands needed for actual builds" \
+		>> $(DOCKERFILE)
+	echo "RUN yum install -y dracut kernel make gcc gcc-c++ wget flex rsync" \
+		>> $(DOCKERFILE)
+	echo "RUN yum install -y rpm-build gperf pam-devel quilt lzop glib2-devel PyXML glibc-static python-devel" \
+		>> $(DOCKERFILE)
+	echo "RUN yum install -y e2fsprogs e2fsprogs-devel libuuid-devel ncurses-devel readline-devel" \
+		>> $(DOCKERFILE)
+	echo "RUN yum install -y parted kbd strace dosfstools kexec-tools btrfs-progs xfsprogs docbook-utils bc" \
+		>> $(DOCKERFILE)
+	echo "" \
+		>> $(DOCKERFILE)
+	
+	docker build -t $(DOCKER_IMAGE_NAME) $(DOCKERFILE_DIR)
+	touch $@
 
+build_container_clean: docker_build_container_clean
+PHONY += docker_build_container_clean
+docker_build_container_clean:
+	rm $(STAMP_DIR)/docker_build_container.build
 
 PHONY += install_initrd_template
 install_initrd_template:	$(INITRD_BUILD_DIR).build
@@ -316,18 +245,32 @@ install_initrd:	$(INITRD_DIR)/initrd.img
 	$(SI_INSTALL) -m 644 $(INITRD_DIR)/initrd.img \
 	    $(BOOT_BIN_DEST)/initrd.img
 
+#
+#   2015.01.28  Olivier Lahaye
+#       - Do not build kernel. Instead use the build host distro one.
+#
+LINUX_VERSION = $(shell cat /proc/version |cut -d" " -f3)
+LINUX_IMAGE = /boot/vmlinuz-$(LINUX_VERSION)
+
+# install the kernel that autoinstall clients will boot from during
+# autoinstallation
+PHONY += install_kernel
+install_kernel:	$(LINUX_IMAGE)
+	mkdir -p $(BOOT_BIN_DEST)
+	$(SI_INSTALL) -m 644 $(LINUX_IMAGE) \
+	    $(BOOT_BIN_DEST)/kernel
+	cat /proc/version |cut -d' ' -f3 > $(BOOT_BIN_DEST)/version.txt
+
 PHONY += build_dir_clean
 build_dir_clean:
 	rm -rf $(INITRD_BUILD_DIR)
 	rm -f  $(INITRD_BUILD_DIR).build
 	rm -f  $(INITRD_BUILD_DIR).prep
 	rm -f  $(INITRD_BUILD_DIR).skel
-	rm -f  $(INITRD_DIR)/kernel_headers.prep
 
 PHONY += initrd_clean
-initrd_clean:	build_dir_clean $(subst .rul,_clean,$(shell cd $(INITRD_DIR)/make.d && ls *.rul))
+initrd_clean:	build_dir_clean cx_freeze_clean bittorrent_clean udpcast_clean hfsutils_clean docker_build_container_clean
 	-find . -name "*~" -exec rm -f {} \;
-	rm -f $(INITRD_DIR)/initrd
 	rm -f $(INITRD_DIR)/initrd.img
 
 PHONY += initrd_distclean
