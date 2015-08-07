@@ -190,8 +190,6 @@ FLAMETHROWER_STATE_DIR = $(DESTDIR)/var/state/systemimager/flamethrower
 
 RSYNC_STUB_DIR = $(ETC)/systemimager/rsync_stubs
 
-CHECK_FLOPPY_SIZE = expr \`du -b $(INITRD_DIR)/initrd.img | cut -f 1\` + \`du -b $(LINUX_IMAGE) | cut -f 1\`
-
 SI_INSTALL = $(TOPDIR)/tools/si_install --si-prefix=$(PREFIX)
 GETSOURCE = $(TOPDIR)/tools/getsource
 
@@ -380,25 +378,6 @@ install_common_libs:
 	$(SI_INSTALL) -m 644 $(LIB_SRC)/SystemImager/UseYourOwnKernel.pm $(LIB_DEST)/SystemImager
 	mkdir -p $(LIBEXEC_DEST)
 	$(SI_INSTALL) -m 755 $(LIB_SRC)/confedit $(LIBEXEC_DEST)
-
-# checks the sized of the i386 kernel and initrd to make sure they'll fit 
-# on an autoinstall diskette
-.PHONY:	check_floppy_size
-check_floppy_size:	$(LINUX_IMAGE) $(INITRD_DIR)/initrd.img
-ifeq ($(ARCH), i386)
-	@### see if the kernel and ramdisk are larger than the size of a 1.44MB
-	@### floppy image, minus about 10k for syslinux stuff
-	@echo -n "Ramdisk + Kernel == "
-	@echo "`$(CHECK_FLOPPY_SIZE)`"
-	@echo "                    1454080 is the max that will fit."
-	@[ `$(CHECK_FLOPPY_SIZE)` -lt 1454081 ] || \
-	     (echo "" && \
-	      echo "************************************************" && \
-	      echo "Dammit.  The kernel and ramdisk are too large.  " && \
-	      echo "************************************************" && \
-	      exit 1)
-	@echo " - ok, that should fit on a floppy"
-endif
 
 # install the initscript & config files for the server
 .PHONY:	install_configs
