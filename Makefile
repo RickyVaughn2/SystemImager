@@ -105,9 +105,12 @@ RELEASE_DOCS = CHANGE.LOG COPYING CREDITS README VERSION
 
 ARCH = $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/)
 
+########################################################################
+#
 # Follows is a set of arch manipulations to distinguish between ppc types
+#
 ifeq ($(ARCH),ppc64)
-
+#
 # Check if machine is Playstation 3
 IS_PS3 = $(shell grep -q PS3 /proc/cpuinfo && echo 1)
 ifeq ($(IS_PS3),1)
@@ -118,10 +121,14 @@ else
                 ARCH = ppc64-iSeries
         endif
 endif
-
 endif
+#
+########################################################################
 
+########################################################################
+#
 # is userspace 64bit
+#
 USERSPACE64 := 0
 ifeq ($(ARCH),ia64)
 	USERSPACE64 := 1
@@ -134,6 +141,8 @@ endif
 ifneq ($(BUILD_ARCH),)
 	ARCH := $(BUILD_ARCH)
 endif
+#
+########################################################################
 
 #
 # To be used by "make" for rules that can take it!
@@ -161,8 +170,7 @@ LIB_DEST = $(DESTDIR)$(shell perl -V:vendorlib | sed s/vendorlib=\'// | sed s/\'
 LOG_DIR = $(DESTDIR)/var/log/systemimager
 LOCK_DIR = $(DESTDIR)/var/lock/systemimager
 
-INITRD_DIR = $(TOPDIR)/initrd_source
-INITRD_BUILD_DIR = $(INITRD_DIR)/build_dir
+INITRD_TEMPLATE = $(TOPDIR)/initrd_template
 
 BOOT_BIN_DEST     = $(USR)/share/systemimager/boot/$(ARCH)/$(FLAVOR)
 
@@ -207,12 +215,11 @@ ifeq ($(IS_CONFIGURED),0)
 all:	show_build_deps
 
 else
-
 	include config.inc
+
 # build everything, install nothing
 .PHONY:	all
 all:	manpages
-
 
 endif
 #
@@ -236,8 +243,7 @@ install_client_all:	install_client install_common install_initrd_template
 .PHONY:	install_server
 install_server:	install_server_man 	\
 				install_configs 	\
-				install_server_libs \
-				$(BITTORRENT_DIR).build
+				install_server_libs
 	$(SI_INSTALL) -d $(BIN)
 	$(SI_INSTALL) -d $(SBIN)
 	$(foreach binary, $(BINARIES), \
@@ -392,10 +398,11 @@ install_configs:
 ########## END initrd ##########
 
 
-########## BEGIN dev_tarball ##########
-# XXX deprecated -- no longer needed with udev. -BEF- 2011.02.15
-########## END dev_tarball ##########
-
+#
+#   For now, always set to don't build.  Need to fix building of man
+#   pages to work with current distros, and make simpler. -BEF- 2015.08.08
+#
+SI_BUILD_DOCS = 0
 
 ########## BEGIN man pages ##########
 # build all of the manpages
@@ -429,6 +436,13 @@ install_docs: docs
 # builds the manual from SGML source
 docs:
 	$(MAKE) -C $(MANUAL_DIR) html ps pdf
+else
+manpages:
+install_server_man:
+install_client_man:
+install_common_man:
+install_docs:
+docs:
 endif
 
 # pre-download the source to other packages that are needed by 
@@ -554,7 +568,7 @@ deb: $(TOPDIR)/tmp/systemimager-$(VERSION).tar.bz2
 
 # removes object files, docs, editor backup files, etc.
 .PHONY:	clean
-clean:	$(subst .rul,_clean,$(shell cd $(TOPDIR)/make.d && ls *.rul))
+clean:
 	-$(MAKE) -C $(MANPAGE_DIR) clean
 	-$(MAKE) -C $(MANUAL_DIR) clean
 
@@ -668,3 +682,11 @@ show_targets_all:
 	@echo ---------------------------------------------------------------------
 	@cat $(SHOW_TARGETS_ALL_MAKEFILES) | egrep '^[a-zA-Z0-9_]+:' | sed 's/:.*//' | sort -u
 	@echo
+
+INITRD_TEMPLATE_FILES = $(shell find $(INITRD_TEMPLATE))
+
+PHONY += install_initrd_template
+install_initrd_template:	$(INITRD_TEMPLATE_FILES)
+	mkdir -p $(BOOT_BIN_DEST)
+	rsync -a $(INITRD_TEMPLATE)/ $(BOOT_BIN_DEST)/initrd_template/
+
