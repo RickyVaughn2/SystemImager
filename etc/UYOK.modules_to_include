@@ -1,8 +1,7 @@
 #
-#   $Id:$
-#    vi:filetype=conf:
+#   vi:filetype=conf:
 #
-#   This is a list of modules needed in the intsallation environment
+#   This is a list of modules needed in the installation environment
 #   and always included in the initrd.img (even if they're not loaded
 #   in the golden client environment).
 #   
@@ -18,3 +17,6 @@ af_packet
 #
 #   Locally customized inclusions go here:
 #
+
+
+
