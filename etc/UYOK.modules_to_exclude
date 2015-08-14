@@ -1,6 +1,5 @@
 #
-#   $Id:$
-#    vi:filetype=conf:
+#   vi:filetype=conf:
 #
 #   This is a list of modules to exclude from the UYOK created initrd.img.
 #   These exclusions can be overridden -- see the command you use to create
@@ -31,3 +30,6 @@ kernel/drivers/media/*
 #
 #   Locally customized exclusions go here:
 #
+
+
+
