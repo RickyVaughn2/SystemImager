@@ -1,9 +1,7 @@
 #
 #   "SystemImager" 
 #
-#   Copyright (C) 1999-2010 Brian Elliott Finley
-#
-#   $Id$
+#   Copyright (C) 1999-2015 Brian Elliott Finley
 #
 ################################################################################
 #
@@ -519,4 +517,7 @@ N: Thomas Zeiser
 E: thomas.zeiser@rrze.uni-erlangen.de
 D: Various patches.
 
+N: Jeremy Siadal
+E: jeremy.c.siadal@intel.com
+D: Miscellaneous guidance, suggestions, input.
 
