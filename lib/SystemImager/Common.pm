@@ -1,17 +1,19 @@
 #
 #   "SystemImager"
 #
-#   Copyright (C) 2001-2006 Brian Elliott Finley
+#   Copyright (C) 2001-2015 Brian Elliott Finley
 #   Copyright (C) 2002 Dann Frazier <dannf@dannf.org>
-#
-#   $Id$
 #
 
 package SystemImager::Common;
 
 use strict;
 use POSIX qw/ceil/;
-use vars qw($version_number $VERSION);
+use vars qw($version_number $VERSION @ISA @EXPORT_OK);
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(
+                which
+            );
 
 $version_number="SYSTEMIMAGER_VERSION_STRING";
 $VERSION = $version_number;
@@ -319,20 +321,30 @@ sub get_boot_flavors {
 }
 
 ## A pure perl which command
-# example: SystemImager::Common->which($file,$ENV{PATH}) || croak "$file not found in your path.";
+#
+# Usage: 
+#   SystemImager::Common->which($file,$ENV{PATH}) || croak "$file not found in your path.";
+#    or
+#   my $fully_qualified_binary = which($file);
+#
 sub which {
-    my ($class, $file, $path) = @_;
+
+    my $file  = shift;
+    my $path  = shift;
     
     if( ! defined($path) ) { 
         $path = $ENV{PATH}; 
     }
     
     foreach my $dir (split(/:/,$path)) {
-      if(-x "$dir/$file") {
-        return 1;
-      }
+        #
+        # Try each potential fully qualified file name
+        my $fqfn = "$dir/$file";
+        if(-x $fqfn) {
+            return $fqfn;
+        }
     }
-    return 0;
+    return undef;
 }
 
 
