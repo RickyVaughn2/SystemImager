@@ -1,9 +1,8 @@
 #!/usr/bin/perl -w
 #
-#  Copyright (C) 2003-2006 Brian Elliott Finley
+#  Copyright (C) 2003-2015 Brian Elliott Finley
 #  Copyright (C) 2006 Andrea Righi
 #
-#  $Id$
 #   vi:set filetype=perl:
 # 
 #   This program is free software; you can redistribute it and/or modify
@@ -63,7 +62,7 @@ unless ($autoinstall_boot_dir) {
 my $version_info = <<"EOF";
 $progname (part of SystemImager) v$VERSION
 
-Copyright (C) 1999-2006 Brian Elliott Finley
+Copyright (C) 1999-2015 Brian Elliott Finley
 Copyright (C) 2006 Andrea Righi
 
 This is free software; see the source for copying conditions.  There is NO
@@ -75,12 +74,15 @@ my $help_info = $version_info . <<"EOF";
 Usage: $progname --destination DIR | --flavor FLAVOR [OPTION]...
 
 Description:
-        Takes the kernel specified, and necessary modules from it, and creates
-        a new boot package based on said kernel.  The resultant files include
-        a matched kernel and initrd.img that can be used as the SystemImager
-        autoinstall client software.
+
+    Takes the kernel specified, and necessary modules from it, and
+    creates a new boot package based on said kernel.  The resultant
+    files include a matched kernel and initrd.img that can be used as
+    the SystemImager autoinstall client software.
+
 
 Options:
+
  --version             
     Display version and copyright information.
 
@@ -88,8 +90,10 @@ Options:
     Display this output.
 
  --arch ARCH
-    The CPU architecture of the resulting initrd boot image (if not specified
-    it is used the same architecture of the image server: $ARCH).
+    Where ARCH is the architecture of the kernel and initrd to be
+    used the boot package being created.
+
+    Default:  Architecture of this machine, which is: $ARCH
 
  --flavor FLAVOR
     The destination flavor to put the new boot package (kernel and
@@ -119,7 +123,7 @@ Options:
     used with a greater variety of client hardware, but can make the
     resultant initrd.img much larger. 
 
- --include-system-firmwar
+ --include-system-firmware
     Include the firmwares that are currently installed on this machine
     when creating the initrd.img.
 
@@ -175,23 +179,23 @@ http://systemimager.org/
 EOF
 
 GetOptions(
-    "help|h"                 => \my $help,
-    "arch=s"               => \my $img_arch,
-    "flavor=s"             => \my $flavor,
-    "quiet"                => \my $quiet,
-    "destination=s"        => \my $destination,
-    "my-modules"           => \my $my_modules,
-    "kernel=s"             => \my $custom_kernel,
-    "modules-dir=s"        => \my $modules_dir,
-    "image=s"              => \my $image,
-    "filesystem=s"         => \my $filesystem,
-    "version"              => \my $version,
-    "yes"                  => \my $yes,
-    "ssh-key=s"            => \my $ssh_key,
-    "authorized-keys=s"    => \my $authorized_keys,
-    "config=s"             => \my $local_cfg,
-    "include-system-firmware" => \my $system_firmware,
-    "firmware-dir=s"       => \my $firmware_dir,
+    "help|h"                    => \my $help,
+    "arch=s"                    => \my $img_arch,
+    "flavor=s"                  => \my $flavor,
+    "quiet"                     => \my $quiet,
+    "destination=s"             => \my $destination,
+    "my-modules"                => \my $my_modules,
+    "kernel=s"                  => \my $custom_kernel,
+    "modules-dir=s"             => \my $modules_dir,
+    "image=s"                   => \my $image,
+    "filesystem=s"              => \my $filesystem,
+    "version"                   => \my $version,
+    "yes"                       => \my $yes,
+    "ssh-key=s"                 => \my $ssh_key,
+    "authorized-keys=s"         => \my $authorized_keys,
+    "config=s"                  => \my $local_cfg,
+    "include-system-firmware"   => \my $system_firmware,
+    "firmware-dir=s"            => \my $firmware_dir,
 ) || die "$help_info";
 
 
@@ -335,9 +339,9 @@ sub create_boot_package {
     }
 
     SystemImager::UseYourOwnKernel->create_uyok_initrd(
-        $arch, $my_modules, $custom_kernel, $modules_dir,
-        $image, $filesystem, $destination,
-        $ssh_key, $authorized_keys, $local_cfg,
+        $arch, $my_modules, $custom_kernel, 
+        $modules_dir, $image, $destination, 
+        $ssh_key, $authorized_keys, $local_cfg, 
         $system_firmware, $firmware_dir, $verbose
     );
 
