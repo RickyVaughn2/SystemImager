@@ -208,20 +208,13 @@ PATH := $(PATH):/sbin:/usr/sbin:/usr/local/sbin
 #
 #  BEGIN Give friendly config and packages help. -BEF-
 #
-IS_CONFIGURED = $(shell test -e config.inc && echo 1 || echo 0)
-ifeq ($(IS_CONFIGURED),0)
-
 .PHONY:	all
 all:	show_build_deps
-
-else
-	include config.inc
 
 # build everything, install nothing
 .PHONY:	all
 all:	manpages
 
-endif
 #
 #  END Give friendly config and packages help. -BEF-
 #
@@ -400,6 +393,7 @@ install_configs:
 
 
 #
+#   XXX
 #   For now, always set to don't build.  Need to fix building of man
 #   pages to work with current distros, and make simpler. -BEF- 2015.08.08
 #
@@ -478,7 +472,6 @@ $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source.tar.bz2: systemimager.spec
 		make distclean && mkdir -p $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source; \
 		(cd $(TOPDIR) && tar --exclude=tmp -cvf - .) | (cd $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source && tar -xvf -); \
 	fi
-	cd $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source && ./configure
 	$(MAKE) -C $(TOPDIR)/tmp/systemimager-$(VERSION)-complete_source get_source
 	#
 	# Make sure we've got all kernel source.  NOTE:  The egrep -v '-' bit is so that we don't include customized kernels (Ie: -ydl).
@@ -581,8 +574,6 @@ clean:
 	-find . -name "#*#" -exec rm -f {} \;
 	-find . -name ".#*" -exec rm -f {} \;
 
-	rm -f config.inc config.log config.status
-
 # same as clean, but also removes downloaded source, stamp files, etc.
 .PHONY:	distclean
 distclean:	clean initrd_distclean
@@ -668,9 +659,7 @@ show_build_deps:
 	@echo "   NOTE: Other distro versions may build fine, and are simply untested by"
 	@echo "         the SystemImage dev team."
 	@echo
-	@echo "2) Run './configure'"
-	@echo
-	@echo "3) Run 'make show_targets' to see a list of make targets from which you can"
+	@echo "2) Run 'make show_targets' to see a list of make targets from which you can"
 	@echo "   choose."
 	@echo
 
