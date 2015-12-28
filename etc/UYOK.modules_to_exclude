@@ -1,5 +1,5 @@
 #
-#   vi:filetype=conf:
+#   UYOK.modules_to_exclude
 #
 #   This is a list of modules to exclude from the UYOK created initrd.img.
 #   These exclusions can be overridden -- see the command you use to create
@@ -7,10 +7,13 @@
 #   
 #   Exlusions:
 #   - must be listed one entry per line
-#   - must use a relative path, starting from a base path of:
-#       /lib/modules/`uname -r`/
-#   - may be individual files (including module extension)
-#   - may be entire directories, ending with "/*"
+#   - must be specified with a relative path name 
+#       - SystemImager will append these paths to 
+#         /lib/modules/`uname -r`/ to form a full path
+#   - may be individual files 
+#       - don't forget to include file name extensions
+#   - may be entire directories
+#       - ending such directories with "/*"
 #
 #
 #   SystemImager standard exclusions go here:
@@ -33,3 +36,5 @@ kernel/drivers/media/*
 
 
 
+
+#   vi:filetype=conf:

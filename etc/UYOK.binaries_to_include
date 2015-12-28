@@ -1,0 +1,189 @@
+#
+#   UYOK.binaries_to_include
+#
+#   A list of binaries to be copied in for the auto-install client 
+#   initrd template from the build-host.
+#
+#   - All binaries will be found according to where they live in $PATH
+#   - If a binary isn't found, a warning will be shown, but you will be
+#     allowed to continue.  For example, this means you don't have to 
+#     install binaries for filesystems you do not use.
+#
+
+# E2FSPROGS   
+mke2fs
+mkfs.ext2
+mkfs.ext3
+mkfs.ext4
+mklost+found
+resize2fs
+tune2fs
+e2fsck
+
+# XFSPROGS
+mkfs.xfs
+
+# DOSFSTOOLS
+dosfsck
+dosfslabel
+fatlabel
+fsck.fat
+fsck.msdos
+fsck.vfat
+mkdosfs
+mkfs.fat
+mkfs.msdos
+mkfs.vfat
+
+# BTRFSUTILS
+btrfs
+btrfsck
+btrfstune
+fsck.btrfs
+mkfs.btrfs
+
+#CX_FREEZE
+
+#BITTORRENT
+
+#UDPCAST = udp-receiver
+
+#HFSUTILS = fsck.hfs hattrib hcd hcopy hdel hdir hformat hfs hfsck hls
+hmkdir
+hmount
+hpwd
+hrename
+hrmdir
+humount
+hvol
+
+# REISERFS
+mkreiserfs
+reiserfstune
+
+# COREUTILS
+cut
+date
+echo
+env
+sort
+test
+false
+true
+[
+expr
+head
+install
+tail
+tee
+tr
+uniq
+wc
+
+# OTHERUTILS
+bc
+gzip
+bzip2
+rsync
+parted
+loadkeys
+clear
+reset
+stty
+tty
+kexec
+ipcalc
+
+# SYSTEMDUTILS
+systemd-cat
+
+# OPTUTILS
+depmod
+strace
+
+#
+# BUSYBOX -- If busybox exists on the system, it's version of the
+# binaries will automatically be preferred over the non-busybox version
+# of the binaries below. -BEF-
+#
+setserial
+iostat
+sed
+rev
+hostname
+egrep
+conspy
+vi
+kill
+dnsdomainname
+busybox
+more
+mpstat
+ping
+dmesg
+fgrep
+umount
+base64
+ash
+sh
+grep
+ps
+mount
+tar
+init
+mkswap
+rmmod
+syslogd
+bootchartd
+blockdev
+swapon
+pivot_root
+makedevs
+halt
+lsmod
+fdisk
+modinfo
+ifconfig
+insmod
+reboot
+poweroff
+modprobe
+route
+klogd
+swapoff
+killall
+nc
+eject
+uptime
+whois
+pmap
+fgconsole
+smemcap
+xz
+unxz
+wget
+lsof
+groups
+xzcat
+flock
+sha3sum
+logger
+nslookup
+time
+awk
+find
+less
+pstree
+pwdx
+which
+ubiattach
+ubidetach
+ubimkvol
+powertop
+ubiupdatevol
+nbd-client
+ubirsvol
+ubirmvol
+nanddump
+nandwrite
+
