@@ -541,7 +541,7 @@ rpm: $(TOPDIR)/tmp/systemimager-$(VERSION).tar.bz2 $(TOPDIR)/systemimager.spec
 #
 # make the debs for systemimager
 #
-UBUNTU_PRECISE_BUILD_DEPS += dos2unix docbook-utils libncurses-dev
+UBUNTU_TRUSTY_BUILD_DEPS += dos2unix docbook-utils libncurses-dev libappconfig-perl
 .PHONY: deb debs
 debs: deb
 deb: $(TOPDIR)/tmp/systemimager-$(VERSION).tar.bz2
@@ -644,11 +644,8 @@ show_build_deps:
 	@echo "   The easiest path is to cut and paste the command below that is"
 	@echo "   appropriate for your distribution."
 	@echo
-	@echo "   Ubuntu 12.04 and newer:"
-	@echo "     apt-get install build-essential rpm flex $(UBUNTU_PRECISE_BUILD_DEPS)"
-	@echo
-	@echo "   Ubuntu 6.06:"
-	@echo "     apt-get install build-essential flex $(UBUNTU_DAPPER_BUILD_DEPS)"
+	@echo "   Ubuntu 14.04 and newer:"
+	@echo "     apt-get install build-essential rpm flex $(UBUNTU_TRUSTY_BUILD_DEPS)"
 	@echo
 	@echo "   RHEL6, CentOS6, and friends:"
 	@echo "     yum install rpm-build patch wget flex bc docbook-utils dos2unix device-mapper-devel gperf pam-devel quilt lzop glib2-devel PyXML glibc-static $(RHEL6_BUILD_DEPS)"
