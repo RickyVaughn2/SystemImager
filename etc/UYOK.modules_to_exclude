@@ -1,40 +1,37 @@
 #
 #   UYOK.modules_to_exclude
 #
+#       vi:filetype=conf:
+#
 #   This is a list of modules to exclude from the UYOK created initrd.img.
 #   These exclusions can be overridden -- see the command you use to create
 #   your UYOK initrd.img for details (Ie: si_prepareclient).
 #   
 #   Exlusions:
-#   - must be listed one entry per line
-#   - must be specified with a relative path name 
-#       - SystemImager will append these paths to 
-#         /lib/modules/`uname -r`/ to form a full path
-#   - may be individual files 
-#       - don't forget to include file name extensions
-#   - may be entire directories
-#       - ending such directories with "/*"
+#   - Must be listed one entry per line.
+#   - May be module names or regular expressions on module paths.  See
+#     the --omit-drivers section in "man dracut" for details.
 #
-#
-#   SystemImager standard exclusions go here:
-#
-build/*
-source/*
-kernel/sound/*
-kernel/drivers/video/*
-kernel/drivers/parport/*
-kernel/net/ipv4/netfilter/*
-kernel/net/ipv6/netfilter/*
-kernel/drivers/char/lp.*
-kernel/drivers/char/ppdev.*
-kernel/drivers/input/joystick/*
-kernel/drivers/media/*
 
 #
-#   Locally customized exclusions go here:
+#   SystemImager standard exclusions:
+#
+#
+.*/sound/.*
+.*/drivers/video/.*
+.*/drivers/parport/.*
+.*/net/ipv4/netfilter/.*
+.*/net/ipv6/netfilter/.*
+.*/drivers/char/lp.*
+.*/drivers/char/ppdev.*
+.*/drivers/input/joystick/.*
+.*/drivers/media/.*
+
+
+#
+#   Add your own local custom entries here:
 #
 
 
 
 
-#   vi:filetype=conf:

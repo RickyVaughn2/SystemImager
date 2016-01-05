@@ -1,6 +1,8 @@
 #
 #   UYOK.binaries_to_include
 #
+#       vi:filetype=conf:
+#
 #   A list of binaries to be copied in for the auto-install client 
 #   initrd template from the build-host.
 #
@@ -27,13 +29,7 @@ mkfs.xfs
 dosfsck
 dosfslabel
 fatlabel
-fsck.fat
-fsck.msdos
-fsck.vfat
 mkdosfs
-mkfs.fat
-mkfs.msdos
-mkfs.vfat
 
 # BTRFSUTILS
 btrfs
@@ -106,13 +102,15 @@ strace
 # binaries will automatically be preferred over the non-busybox version
 # of the binaries below. -BEF-
 #
-setserial
+#setserial
+#   not called directly from the code -- not needed?
 iostat
 sed
 rev
 hostname
 egrep
-conspy
+#conspy
+#   not called directly from the code -- not needed?
 vi
 kill
 dnsdomainname
@@ -133,12 +131,10 @@ tar
 init
 mkswap
 rmmod
-syslogd
-bootchartd
+#syslogd     # if we have logger, do we need this? Consider switching to rsyslog or just logger? -BEF-
 blockdev
 swapon
 pivot_root
-makedevs
 halt
 lsmod
 fdisk
@@ -149,7 +145,6 @@ reboot
 poweroff
 modprobe
 route
-klogd
 swapoff
 killall
 nc
@@ -158,7 +153,6 @@ uptime
 whois
 pmap
 fgconsole
-smemcap
 xz
 unxz
 wget
@@ -166,7 +160,6 @@ lsof
 groups
 xzcat
 flock
-sha3sum
 logger
 nslookup
 time
@@ -176,14 +169,27 @@ less
 pstree
 pwdx
 which
-ubiattach
-ubidetach
-ubimkvol
-powertop
-ubiupdatevol
-nbd-client
-ubirsvol
-ubirmvol
-nanddump
-nandwrite
 
+
+# Not needed -- using udev now. -BEF-
+#makedevs  
+
+# Not called directly from the code -- not needed?
+#nanddump
+#nandwrite
+#ubiattach
+#ubidetach
+#ubimkvol
+#ubiupdatevol
+#ubirsvol
+#ubirmvol
+#powertop
+#nbd-client    
+#sha3sum
+#bootchartd
+#smemcap
+
+#
+# Note to self:  Tools to consider? -BEF-
+#
+#pxe-kexec
