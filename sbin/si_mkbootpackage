@@ -219,14 +219,14 @@ if ($> != 0) {
 }
 
 unless (($destination) or ($flavor)) {
-    print "FATAL: missing --destination DIR, or --flavor FLAVOR option!\n";
-    print qq(Try "$progname --help" for more info.\n);
+    print "$help_info";
+    print "  Wanna hint?  Try:  --destination DIR  or  --flavor FLAVOR\n\n";
     exit 1;
 }
 
 if (($destination) and ($flavor)) {
-    print "FATAL: couldn't specify both --destination DIR and --flavor FLAVOR options!\n";
-    print qq(Try "$progname --help" for more info.\n);
+    print "$help_info";
+    print "  Try:  either --destination DIR  or  --flavor FLAVOR, but not both\n\n";
     exit 1;
 }
 

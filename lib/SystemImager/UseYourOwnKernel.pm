@@ -1,7 +1,7 @@
 #  
 #   Copyright (C) 2004-2015 Brian Elliott Finley
 #
-#   vi:set filetype=perl et ts=4 ai tw=0:
+#   vi:set filetype=perl et ts=4 ai tw=0 number:
 # 
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -114,25 +114,6 @@ sub create_uyok_initrd() {
             $uname_r = get_uname_r();
         }
 
-        my @initrd_naming_schemes;
-        push @initrd_naming_schemes, "/boot/initrd.img-$uname_r";   # Ubuntu style
-
-        my $system_initrd;
-        foreach my $file (@initrd_naming_schemes) {
-            $file = "$prefix/$file";
-            $file =~ s#/+#/#g;  # Turn all the multiple slashes into single slashes (//boot/initrd, etc...)
-            if(-e $file) {
-                $system_initrd = $file;
-                print "\nINFO: Found $system_initrd to go with kernel version $uname_r\n";
-            }
-        }
-        if(! $system_initrd) {
-            print "ERROR: Couldn't find an initrd for kernel version $uname_r\n";
-            exit 1;
-        }
-
-
-
         #
         #   2) unpack existing initrd into a staging directory
         #
@@ -174,38 +155,38 @@ sub create_uyok_initrd() {
         #
         #########################################################################
 
-        #########################################################################
-        #
-        # Determine module exclusions here.  Jeremy Siadal made the excellent
-        # suggestion of explicitly excluding, as opposed to explicitly
-        # including, so that we don't inadvertently exclude some new fancy
-        # module that someone needs. -BEF-
-        #
-        my $modules_to_exclude = '';
-        $file = "/etc/systemimager/UYOK.modules_to_exclude";
-        if(-e $file) {
-            #
-            # Get list of exclusions from "/etc/systemimager/UYOK.modules_to_exclude"
-            # (that file should live in the "systemimager-common" package)
-            #
-            open(FILE,"<$file") or die("Couldn't open $file for reading");
-                while(<FILE>) {
-                    next if(m/^(#|\s|$)/);
-                    chomp;
-                    $modules_to_exclude .= "--exclude $_ ";
-                }
-            close(FILE);
-        }
-        #
-        #########################################################################
-
-
+# now handled via dracut        #########################################################################
+# now handled via dracut        #
+# now handled via dracut        # Determine module exclusions here.  Jeremy Siadal made the excellent
+# now handled via dracut        # suggestion of explicitly excluding, as opposed to explicitly
+# now handled via dracut        # including, so that we don't inadvertently exclude some new fancy
+# now handled via dracut        # module that someone needs. -BEF-
+# now handled via dracut        #
+# now handled via dracut        my $modules_to_exclude = '';
+# now handled via dracut        $file = "/etc/systemimager/UYOK.modules_to_exclude";
+# now handled via dracut        if(-e $file) {
+# now handled via dracut            #
+# now handled via dracut            # Get list of exclusions from "/etc/systemimager/UYOK.modules_to_exclude"
+# now handled via dracut            # (that file should live in the "systemimager-common" package)
+# now handled via dracut            #
+# now handled via dracut            open(FILE,"<$file") or die("Couldn't open $file for reading");
+# now handled via dracut                while(<FILE>) {
+# now handled via dracut                    next if(m/^(#|\s|$)/);
+# now handled via dracut                    chomp;
+# now handled via dracut                    $modules_to_exclude .= "--exclude $_ ";
+# now handled via dracut                }
+# now handled via dracut            close(FILE);
+# now handled via dracut        }
+# now handled via dracut        #
+# now handled via dracut        #########################################################################
+# now handled via dracut
+# now handled via dracut
 #
 #   For now, we just use the modules and kernel already in the system's initrd
 #   that we're starting from. -BEF-
 #
 #        my $module_dir;
-#        if ($custom_mod_dir) {
+#e        if ($custom_mod_dir) {
 #            $module_dir = $custom_mod_dir;
 #        } else {
 #            $module_dir = "/lib/modules/$uname_r" unless ($custom_kernel);
@@ -216,7 +197,7 @@ sub create_uyok_initrd() {
 #            #
 #            my @modules = ();
 #            unless ($custom_mod_dir) {
-#                @modules = get_load_ordered_list_of_running_modules();
+#                @modules = get_full_list_of_modules_for_autoinstall_client();
 #            }
 #
 #            unless (-d "$staging_dir/lib/modules") {
@@ -357,13 +338,15 @@ sub create_uyok_initrd() {
         #
         print qq/
 
-WARNING: The following binaries could not be found on this machine, and
-I'm assuming that's OK. ;-)  SystemImager can deploy images using many
-different filesystems but most people only use one or two.  If your
-autoinstall attempt fails, you may need to either a) on this machine,
-install the filesystem utils package for the filesystem of the image you
-are deploying, or b) change the filesystem type to be deployed (see "man
-autoinstallscript.conf" for details).
+WARNING: The following binaries could not be found on this machine, but
+we'll assume that's OK for now. ;-)  SystemImager can deploy images using
+many different filesystems but most people only use one or two.  If your
+autoinstall attempt fails, you may need to do one of the following:
+
+    a) install additional filesystem utilities on this machine
+    b) change the filesystem type to be deployed in autoinstallscript.conf
+       (see "man autoinstallscript.conf" for details)
+
 /;
         foreach my $binary (@binaries_fail) {
             print "  $binary\n";
@@ -414,17 +397,15 @@ autoinstallscript.conf" for details).
         #
         # Copy bins and libs over
         #
-        foreach my $file ((keys %fq_binaries), (keys %fq_libs)) {
-            print "Adding $file to the initrd.\n" if($verbose);
+        foreach my $file (sort ((keys %fq_binaries), (keys %fq_libs)) ) {
+#XXX            print "Adding $file to the initrd.\n" if($verbose);
             copy("$file","$staging_dir/$file") or die "Couldn't copy $file to $staging_dir/$file !\n";
         }
 
-print "\$staging_dir $staging_dir\n";
-print "Try this:\n";
-print "  cd $staging_dir && (find bin sbin usr/bin usr/sbin)\n";
+#XXX
 print "\n";
-
-exit 1;
+print "\$staging_dir $staging_dir\n";
+print "\n";
 
 
         #
@@ -432,7 +413,9 @@ exit 1;
         #      use with the autoinstall client software.
         #
 
-        packUpStagingDirIntoInitrd($staging_dir, $boot_dir);
+        create_initrd_with_dracut($staging_dir, $boot_dir);
+print "EXIT during development... \n";
+exit 1; #XXX
         _get_copy_of_kernel( $uname_r, $boot_dir, $custom_kernel );
         _record_arch( $boot_dir );
 
@@ -446,9 +429,69 @@ exit 1;
 }
 
 
-sub packUpStagingDirIntoInitrd($$) {
+sub create_initrd_with_dracut($$) {
 
-    print "HUH?\n";
+    my $staging_dir = shift;
+    my $boot_dir    = shift;
+
+
+    print "Testing 1, 2, 3...\n";
+    print "Assembling dracut command.\n";
+
+    my $file;
+    my %drivers_to_add;
+    my %drivers_to_omit;
+
+    #
+    #   Running modules
+    #
+    $file = "/proc/modules";
+    foreach my $entry ( read_in_list_of_things($file) ) {
+        $drivers_to_add{$entry} = 1;
+    }
+
+    #   Modules from include file
+    #
+    $file = "/etc/systemimager/UYOK.modules_to_include";
+    foreach my $entry ( read_in_list_of_things($file) ) {
+        $drivers_to_add{$entry} = 1;
+    }
+
+    #
+    #   Modules from exclude file
+    #
+    $file = "/etc/systemimager/UYOK.modules_to_exclude";
+    foreach my $entry ( read_in_list_of_things($file) ) {
+        $drivers_to_omit{$entry} = 1;
+    }
+
+    #
+    #   Turn into simple lists
+    #
+    my $add_drivers_list;
+    foreach my $entry (sort keys %drivers_to_add) {
+        $add_drivers_list .= " $entry";
+    }
+    $add_drivers_list =~ s/^s+//;
+
+    my $omit_drivers_list;
+    foreach my $entry (sort keys %drivers_to_omit) {
+        $omit_drivers_list .= " $entry";
+    }
+    $omit_drivers_list =~ s/^s+//;
+
+    #
+    #   Begin crafting command
+    #
+    my $cmd = qq(dracut);
+    $cmd .= qq( --add-drivers "$add_drivers_list");
+    $cmd .= qq( --omit-drivers "$omit_drivers_list");
+    $cmd .= qq( --include ${staging_dir}/ /);
+
+print "$cmd\n";
+exit 1;
+
+
     return 1;
 }
 
@@ -472,11 +515,11 @@ sub get_libs {
     close(INPUT);
 
     if($verbose) {
-        print "INFO: Found the following libraries required by $binary:\n";
-        foreach my $lib (@libs) {
-            print "  $lib\n";
-        }
-        print "\n";
+#XXX       print "INFO: Found the following libraries required by $binary:\n";
+#XXX       foreach my $lib (@libs) {
+#XXX           print "  $lib\n";
+#XXX       }
+#XXX       print "\n";
     }
 
     return @libs;
@@ -783,31 +826,31 @@ sub is_initrd
 }
 
 
+##
+## Usage:
+##       my $initrd_file = _choose_initrd_file( $boot_dir, $kernel_release );
+##
+#sub _choose_initrd_file
+#{
+#        # Try to detect a valid initrd that can be used together with a
+#        # kernel release - this function is used by kexec stuff to
+#        # generate a configuration file for systemconfigurator
+#        # (/etc/systemconfig/systemconfig.conf)
+# 
+#        my $dir = shift;
+#        my $kernel_release = shift;
 #
-# Usage:
-#       my $initrd_file = _choose_initrd_file( $boot_dir, $kernel_release );
+#        opendir(DIR, $dir) || die("Can't opendir $dir: $!");
+#        my @files = readdir(DIR);
+#        closedir DIR;
 #
-sub _choose_initrd_file
-{
-        # Try to detect a valid initrd that can be used together with a
-        # kernel release - this function is used by kexec stuff to
-        # generate a configuration file for systemconfigurator
-        # (/etc/systemconfig/systemconfig.conf)
- 
-        my $dir = shift;
-        my $kernel_release = shift;
-
-        opendir(DIR, $dir) || die("Can't opendir $dir: $!");
-        my @files = readdir(DIR);
-        closedir DIR;
-
-        foreach (@files) {
-                my $file = "$dir/$_";
-                if (is_initrd($file, $kernel_release)) {
-                        return $file;
-                }
-        }
-}
+#        foreach (@files) {
+#                my $file = "$dir/$_";
+#                if (is_initrd($file, $kernel_release)) {
+#                        return $file;
+#                }
+#        }
+#}
 
 
 #
@@ -844,107 +887,39 @@ sub get_uname_r {
 }
 
 
-sub get_load_ordered_list_of_running_modules() {
+#
+#   Usage:  my @array = read_list_of_things($file);
+#
+#       Where:
+#       - Each line that is not blank or a comment will be included in @array.
+#       - Anything after the first space on a line gets stripped off
+#
+sub read_in_list_of_things() {
 
-        my $file = "/proc/modules";
-        my $mandatory_modules_file = '/etc/systemimager/UYOK.modules_to_include';
-        my @modules = ();
-        my @mandatory_modules = ();
+    my $file            = shift;
 
-        unless (-e $file) {
-            print STDERR qq(WARNING: running kernel doesn't support loadable modules!\n);
-            return @modules; 
+    my @things;
+
+    if (-e $file) {
+        open(FILE, "<$file") or die("Couldn't open $file for reading\n");
+        while(<FILE>) {
+
+            next if(m/^(#|\s|$)/);
+            chomp;
+
+            my $thing = $_;
+            $thing   =~ s/(^\s+|\s+.*$)//g;
+
+#XXX            print "Thing: $thing\n" if($verbose);
+            push(@things, $thing);
         }
-        if (-e $mandatory_modules_file) {
-            #
-            # Get list of inclusions from "/etc/systemimager/UYOK.modules_to_include"
-            # (that file should live in the "systemimager-common" package)
-            #
-            open(MODULES, "<$mandatory_modules_file") or
-                die("Couldn't open $mandatory_modules_file for reading\n");
-                while(<MODULES>) {
-                    next if(m/^(#|\s|$)/);
-                    chomp;
-                    push(@mandatory_modules, $_);
-                }
-            close(MODULES);
-        }
+        close(FILE);
 
-        # Find the right way to get modules info.
-        my $uname_r = get_uname_r();
-        my $modinfo_filename;
-        if ($uname_r =~ /(^2\.6)|(^3\.[0-9]+)/) {
-            $modinfo_filename = 'modinfo -F filename';
-        } elsif ($uname_r =~ /^2\.4/) {
-            $modinfo_filename = 'modinfo -n';
-        } else {
-            die "ERROR: Unsupported kernel $uname_r!\n";
-        }
-
-        # get the list of the loaded module filenames.
-        open(MODULES,"<$file") or die("Couldn't open $file for reading.");
-        while(<MODULES>) {
-                my ($module) = split;
-                chomp(my $module_file = `$modinfo_filename $module 2>/dev/null`);
-                if ($?) {
-                        print STDERR qq(WARNING: Couldn't find module "$module" (skipping it)!\n);
-                        next;
-                } elsif ($module_file eq '') {
-                    # try to get the filename using "modprobe -l".
-                   chomp($module_file = `modprobe -l $module`);
-                }
-                push (@modules, $module_file);
-        }
-        close(MODULES);
-
-        # add not-loaded modules mandatory for the installation environment
-        foreach my $module (@mandatory_modules) {
-                chomp(my $module_file = `$modinfo_filename $module 2>/dev/null`);
-                if ($?) {
-                        print STDERR qq(INFO: Couldn't find module "$module", assuming it's built into the kernel or unnecessary.\n);
-                        next;
-                }
-                push (@modules, $module_file);
-                # add module dependencies
-                my @deps;
-                if ($uname_r =~ /(^2\.6)|(^3\.[0-9])/) {
-                    chomp(@deps = split(/,/, `modinfo -F depends $module 2>/dev/null`));
-                } elsif ($uname_r =~ /^2\.4/) {
-                    open(MODULES_DEP, "</lib/modules/$uname_r/modules.dep") or
-                        die "ERROR: cannot open modules.dep!\n";
-                    while ($_ = <MODULES_DEP>) {
-                        if ($_ =~ m/$module_file:(.*)$/) {
-                            $_ = $1;
-                            do {
-                                last if ($_ =~ m/^$/);
-                                $_ =~ s/\s*(\S+)\s*\\*$/$1/g;
-                                push(@deps, $_);
-                            } while (chomp($_ = <MODULES_DEP>));
-                            last;
-                        }
-                    }
-                    close(MODULES_DEP);
-                } else {
-                    die "ERROR: unsupported kernel $uname_r!\n";
-                }
-                foreach (@deps) {
-                    next unless ($_);
-                    chomp(my $module_file = `$modinfo_filename $_ 2>/dev/null`);
-                    if ($?) {
-                        print STDERR qq(WARNING: Couldn't find module "$_", assuming it's built into the kernel.\n);
-                        next;
-                    }
-                    push (@modules, $module_file);
-                }
-        }
-        # remove duplicate modules
-        my %seen = ();
-        @modules = grep { !$seen{$_}++ } @modules;
-
-        # reverse order list of running modules
-        @modules = reverse(@modules);
-
-        return @modules;
+    } else {
+        print STDERR qq(WARNING: $file doesn't exist!\n);
+    }
+    
+    return @things;
 }
 
 
@@ -964,29 +939,29 @@ sub get_uncompressed_initrd_size($) {
 }
 
 
+##
+##   Take an existing initrd and modify it to work as a SystemImager autoinstall
+##   client initrd. -BEF-
+##
+#sub _create_new_initrd($$) {
 #
-#   Take an existing initrd and modify it to work as a SystemImager autoinstall
-#   client initrd. -BEF-
+#        my $staging_dir = shift;
+#        my $boot_dir = shift;
 #
-sub _create_new_initrd($$) {
-
-        my $staging_dir = shift;
-        my $boot_dir = shift;
-
-        print "INFO: Creating new initrd from with contents from staging_dir:  $staging_dir\n" if( $verbose );
-
-        # Print initrd size information.
-        print "INFO: Evaluating initrd size to be added in the kernel boot options\n" .
-              "INFO: (e.g. /etc/systemimager/pxelinux.cfg/syslinux.cfg):\n";
-        if (-f "$boot_dir/initrd.img") {
-            my $ramdisk_size = (`zcat $boot_dir/initrd.img | wc -c` + 10485760) / 1024;
-            print "INFO:  suggested value => ramdisk_size=$ramdisk_size\n\n";
-        } else {
-            print qq(WARNING: cannot find the new boot initrd!\n);
-        }
-
-        return 1;
-}
+#        print "INFO: Creating new initrd from with contents from staging_dir:  $staging_dir\n" if( $verbose );
+#
+#        # Print initrd size information.
+#        print "INFO: Evaluating initrd size to be added in the kernel boot options\n" .
+#              "INFO: (e.g. /etc/systemimager/pxelinux.cfg/syslinux.cfg):\n";
+#        if (-f "$boot_dir/initrd.img") {
+#            my $ramdisk_size = (`zcat $boot_dir/initrd.img | wc -c` + 10485760) / 1024;
+#            print "INFO:  suggested value => ramdisk_size=$ramdisk_size\n\n";
+#        } else {
+#            print qq(WARNING: cannot find the new boot initrd!\n);
+#        }
+#
+#        return 1;
+#}
 
 
 sub _display_file_size($) {
