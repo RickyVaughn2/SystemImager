@@ -77,7 +77,7 @@ sub create_uyok_initrd() {
         if ($destination) {
             $boot_dir = $destination;
         } else {
-            $boot_dir = '/etc/systemimager/boot';   #XXX find proper location for this.  /tftpboot ? /lib/something maybe? -BEF-
+            $boot_dir = '/usr/share/systemimager/boot';
         }
 
 
@@ -138,120 +138,6 @@ sub create_uyok_initrd() {
         #   3) add contents of SystemImager template directory into staging directory
         #
 
-        #########################################################################
-        #
-        # Copy template over
-        #
-        my $templateDir = "/usr/share/systemimager/boot/$arch/standard/initrd_template/";
-
-        if (! -d $templateDir) {
-            rmdir($staging_dir);
-            print "FATAL: couldn't find a valid initrd template.\n";
-            exit 1;
-        }
-
-        $cmd = qq(rsync -a $templateDir/ $staging_dir/);
-        !system( $cmd ) or die( "Couldn't $cmd." );
-        #
-        #########################################################################
-
-# now handled via dracut        #########################################################################
-# now handled via dracut        #
-# now handled via dracut        # Determine module exclusions here.  Jeremy Siadal made the excellent
-# now handled via dracut        # suggestion of explicitly excluding, as opposed to explicitly
-# now handled via dracut        # including, so that we don't inadvertently exclude some new fancy
-# now handled via dracut        # module that someone needs. -BEF-
-# now handled via dracut        #
-# now handled via dracut        my $modules_to_exclude = '';
-# now handled via dracut        $file = "/etc/systemimager/UYOK.modules_to_exclude";
-# now handled via dracut        if(-e $file) {
-# now handled via dracut            #
-# now handled via dracut            # Get list of exclusions from "/etc/systemimager/UYOK.modules_to_exclude"
-# now handled via dracut            # (that file should live in the "systemimager-common" package)
-# now handled via dracut            #
-# now handled via dracut            open(FILE,"<$file") or die("Couldn't open $file for reading");
-# now handled via dracut                while(<FILE>) {
-# now handled via dracut                    next if(m/^(#|\s|$)/);
-# now handled via dracut                    chomp;
-# now handled via dracut                    $modules_to_exclude .= "--exclude $_ ";
-# now handled via dracut                }
-# now handled via dracut            close(FILE);
-# now handled via dracut        }
-# now handled via dracut        #
-# now handled via dracut        #########################################################################
-# now handled via dracut
-# now handled via dracut
-#
-#   For now, we just use the modules and kernel already in the system's initrd
-#   that we're starting from. -BEF-
-#
-#        my $module_dir;
-#e        if ($custom_mod_dir) {
-#            $module_dir = $custom_mod_dir;
-#        } else {
-#            $module_dir = "/lib/modules/$uname_r" unless ($custom_kernel);
-#        }
-#        if ($module_dir) {
-#            #
-#            # Copy modules
-#            #
-#            my @modules = ();
-#            unless ($custom_mod_dir) {
-#                @modules = get_full_list_of_modules_for_autoinstall_client();
-#            }
-#
-#            unless (-d "$staging_dir/lib/modules") {
-#                eval { mkpath("$staging_dir/lib/modules", 0, 0755) };
-#                if ($@) {
-#                        print "Couldn't create $staging_dir/lib/modules: $@";
-#                }
-#            }
-#
-#            print "INFO: Copying modules to new initrd from: $module_dir...\n" if( $verbose );
-#
-#            my $kernel_release = ($custom_kernel) ? _get_kernel_release($custom_kernel) : $uname_r;
-#            unless ($my_modules) {
-#                # FIXME: option L is required in order to copy all modules, even ones that are outside the
-#                # /lib/modules tree (some proprietary modules are stored elswhere and a link is created there after).
-#                # this could pose problem when circular links are encountered.
-#                # Need to find a better way to handle this.
-#                $cmd = qq(rsync -aL --exclude=build --exclude=source ) .
-#                       qq($modules_to_exclude $module_dir/* $staging_dir/lib/modules/$kernel_release);
-#                !system( $cmd ) or die( "Couldn't $cmd." );
-#            } else {
-#                # Copy only loaded modules ignoring exclusions.
-#                foreach my $module ( @modules ) {
-#                    next unless ($module);
-#                    $cmd = qq(rsync -aR $module $staging_dir);
-#                    !system( $cmd ) or die( "Couldn't $cmd." );
-#                }
-#            }
-#            # Copy module configuration files.
-#            print "INFO: Copying modules configuration from: $module_dir...\n" if( $verbose );
-#            $cmd = qq(cd $module_dir && rsync --exclude=build --exclude=source -R * $staging_dir/lib/modules/$kernel_release);
-#            !system( $cmd ) or die( "Couldn't $cmd." );
-#
-#            #
-#            # add modules and insmod commands
-#            #
-#            my $my_modules_dir = "$staging_dir/my_modules";
-#            $file = "$my_modules_dir" . "/INSMOD_COMMANDS";
-#            open( FILE,">>$file" ) or die( "Couldn't open $file for appending" );
-#            print "INFO: Appending insmod commands to ./my_modules_dir/INSMOD_COMMANDS...\n" if( $verbose );
-#            if ($#modules == -1) {
-#                print "INFO: Using custom kernel: udev will be used to autodetect the needed modules...\n"
-#                    if( $verbose );
-#            } else {
-#                foreach my $module ( @modules ) {
-#                    if (-f "$staging_dir/$module") {
-#                        print " > insmod $module\n" if( $verbose );
-#                        print FILE "insmod $module\n";
-#                    }
-#                }
-#            }
-#            close(FILE);
-#        }
-
         #
         # Copy SSH keys.
         #
@@ -286,6 +172,7 @@ sub create_uyok_initrd() {
             }
         }
 
+#XXX handle firmware via dracut
 #
 #   For now, we just use the modules and kernel (and firmware) already in the
 #   system's initrd that we're starting from. -BEF-
@@ -302,137 +189,51 @@ sub create_uyok_initrd() {
 #            }
 #        }
 
+        create_initrd_with_dracut($staging_dir, $boot_dir, $arch);
+        _get_copy_of_kernel( $uname_r, $boot_dir, $custom_kernel );
+        _record_arch( $boot_dir );
 
-        ################################################################
-        #
-        #   4) add additional binaries required for autoinstall into
-        #      staging directory
-        #
+        !system( $cmd ) or die( "Couldn't $cmd." );
+exit 1; #XXX
+        return 1;
+}
 
-        #
-        # Add binaries to staging dir for addition to initrd
-        #
-        my %fq_binaries;
-        my @binaries_fail;
-        $file = "/etc/systemimager/UYOK.binaries_to_include";
-        if(-e $file) {
-            open(FILE,"<$file") or die("Couldn't open $file for reading");
-                while(<FILE>) {
-                    next if(m/^(#|\s|$)/);
-                    chomp;
-                    s/^\s+//;    # remove leading spaces
-                    s/\s+$//;    # remove trailing spaces
-                    my $binary = $_;
-                    my $fq_binary = which($binary);
-                    if($fq_binary) {
-                        $fq_binaries{$fq_binary} = 1;
-                    } else {
-                        push(@binaries_fail, $binary);
-                    }
-                }
-            close(FILE);
-        }
 
-        #
-        # Warn about the unfound... whoooohaaaaaa
-        #
-        print qq/
+#
+# give_missing_binaries_warning(\@list_of_binaries);
+#
+sub give_missing_binaries_warning($) {
 
-WARNING: The following binaries could not be found on this machine, but
-we'll assume that's OK for now. ;-)  SystemImager can deploy images using
-many different filesystems but most people only use one or two.  If your
-autoinstall attempt fails, you may need to do one of the following:
+    my $missing_binaries = shift;
+
+    print qq/
+
+WARNING: The following binaries could not be found on this machine, but we'll
+assume they're filesystem related and that that's OK for now. ;-)  SystemImager
+can deploy images using many different filesystems but most people only use one
+or two.  If your autoinstall attempt fails, you may need to do one of the
+following:
 
     a) install additional filesystem utilities on this machine
     b) change the filesystem type to be deployed in autoinstallscript.conf
        (see "man autoinstallscript.conf" for details)
 
 /;
-        foreach my $binary (@binaries_fail) {
-            print "  $binary\n";
-        }
-        print "\n";
-        sleep 1;
-        #
-        ################################################################
+    foreach my $binary (@$missing_binaries) {
+        print "  $binary\n";
+    }
+    print "\n";
+    sleep 1;
 
-        ################################################################
-        #
-        # Find libs that go with binaries
-        #
-        my %fq_libs;
-        foreach my $fq_binary (keys %fq_binaries) {
-            my @libs = get_libs($fq_binary) or die("Couldn't get libs for $fq_binary");
-            if(@libs) {
-                foreach my $lib (@libs) {
-                    # We're perfectly fine with statically compiled binaries. -BEF-
-                    $fq_libs{$lib} = 1  unless($lib eq "not a dynamic executable");
-                }
-            } else {
-                print "WARNING:  Couldn't find libs for $fq_binary.\n";
-                print "          Not installing binary in your new initrd.\n";
-                delete $fq_binaries{$fq_binary};
-            }
-        }
-
-        #
-        # Get unique list of paths
-        #
-        my %file_paths;
-        foreach my $file ((keys %fq_binaries), (keys %fq_libs)) {
-            my $path = dirname($file);
-            $file_paths{$path} = 1;
-        }
-
-        #
-        # Create the file paths for binaries and libraries in staging dir
-        #
-        foreach my $path (keys %file_paths) {
-            eval { mkpath("$staging_dir/$path", 0, 0755) };
-            if ($@) {
-                    print "Couldn't create $staging_dir/$path: $@";
-            }
-        }
-
-        #
-        # Copy bins and libs over
-        #
-        foreach my $file (sort ((keys %fq_binaries), (keys %fq_libs)) ) {
-#XXX            print "Adding $file to the initrd.\n" if($verbose);
-            copy("$file","$staging_dir/$file") or die "Couldn't copy $file to $staging_dir/$file !\n";
-        }
-
-#XXX
-print "\n";
-print "\$staging_dir $staging_dir\n";
-print "\n";
-
-
-        #
-        #   5) pack up the staging directory as a new initrd ready for
-        #      use with the autoinstall client software.
-        #
-
-        create_initrd_with_dracut($staging_dir, $boot_dir);
-print "EXIT during development... \n";
-exit 1; #XXX
-        _get_copy_of_kernel( $uname_r, $boot_dir, $custom_kernel );
-        _record_arch( $boot_dir );
-
-        #
-        # Remove temp dir
-        #
-        $cmd = "rm -fr $staging_dir";
-        !system( $cmd ) or die( "Couldn't $cmd." );
-
-        return 1;
+    return 1;
 }
 
 
-sub create_initrd_with_dracut($$) {
+sub create_initrd_with_dracut($$$) {
 
-    my $staging_dir = shift;
-    my $boot_dir    = shift;
+    my $staging_dir     = shift;
+    my $boot_dir        = shift;
+    my $arch            = shift;
 
 
     print "Testing 1, 2, 3...\n";
@@ -465,30 +266,45 @@ sub create_initrd_with_dracut($$) {
         $drivers_to_omit{$entry} = 1;
     }
 
-    #
-    #   Turn into simple lists
-    #
-    my $add_drivers_list;
-    foreach my $entry (sort keys %drivers_to_add) {
-        $add_drivers_list .= " $entry";
+    my %binaries_to_install;
+    my @missing_binaries;
+    $file = "/etc/systemimager/UYOK.binaries_to_include";
+    foreach my $binary ( read_in_list_of_things($file) ) {
+        if( which($binary) ) {
+            $binaries_to_install{$binary} = 1;
+        } else {
+            push(@missing_binaries, $binary);
+        }
     }
-    $add_drivers_list =~ s/^s+//;
 
-    my $omit_drivers_list;
-    foreach my $entry (sort keys %drivers_to_omit) {
-        $omit_drivers_list .= " $entry";
+    #if( scalar(@missing_binaries) > 0 ) {
+    if( @missing_binaries ) {
+        give_missing_binaries_warning(\@missing_binaries);
     }
-    $omit_drivers_list =~ s/^s+//;
+
 
     #
     #   Begin crafting command
-    #
-    my $cmd = qq(dracut);
-    $cmd .= qq( --add-drivers "$add_drivers_list");
-    $cmd .= qq( --omit-drivers "$omit_drivers_list");
-    $cmd .= qq( --include ${staging_dir}/ /);
+    # XXX handle --flavor -BEF-
+    my $templateDir = "/usr/share/systemimager/boot/$arch/standard/initrd_template/";
+    my $cmd  = qq(dracut --force \\\n);
+        foreach my $entry (sort keys %drivers_to_add) {
+            $cmd .= qq( --add-drivers "$entry" \\\n);
+        }
+        foreach my $entry (sort keys %drivers_to_omit) {
+            $cmd .= qq( --omit-drivers "$entry" \\\n);
+        }
+        foreach my $binary (sort keys %binaries_to_install) {
+            $cmd .= qq( --install "$binary" \\\n);
+        }
+#       $cmd .= qq( --include ${staging_dir}/ /)         . q( \) . qq(\n);
+#   consider --install for each file in template?
+#     or     --include $template_dir instead of using a $staging_dir?
+        $cmd .= qq( --modules "base dash" \\\n);
+        $cmd .= qq( --include "$templateDir" / \\\n);
+        $cmd .= qq(   $boot_dir/initrd.img\n);
 
-print "$cmd\n";
+    run_cmd($cmd, 1);
 exit 1;
 
 
@@ -568,7 +384,7 @@ sub _get_arch {
 }
 
 
-sub _get_copy_of_kernel($) {
+sub _get_copy_of_kernel($$) {
 
         my $uname_r       = shift;
         my $boot_dir      = shift;
@@ -937,31 +753,6 @@ sub get_uncompressed_initrd_size($) {
 
         return $size;
 }
-
-
-##
-##   Take an existing initrd and modify it to work as a SystemImager autoinstall
-##   client initrd. -BEF-
-##
-#sub _create_new_initrd($$) {
-#
-#        my $staging_dir = shift;
-#        my $boot_dir = shift;
-#
-#        print "INFO: Creating new initrd from with contents from staging_dir:  $staging_dir\n" if( $verbose );
-#
-#        # Print initrd size information.
-#        print "INFO: Evaluating initrd size to be added in the kernel boot options\n" .
-#              "INFO: (e.g. /etc/systemimager/pxelinux.cfg/syslinux.cfg):\n";
-#        if (-f "$boot_dir/initrd.img") {
-#            my $ramdisk_size = (`zcat $boot_dir/initrd.img | wc -c` + 10485760) / 1024;
-#            print "INFO:  suggested value => ramdisk_size=$ramdisk_size\n\n";
-#        } else {
-#            print qq(WARNING: cannot find the new boot initrd!\n);
-#        }
-#
-#        return 1;
-#}
 
 
 sub _display_file_size($) {
