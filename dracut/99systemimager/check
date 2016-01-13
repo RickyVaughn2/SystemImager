@@ -1,0 +1,38 @@
+#!/bin/bash
+
+#   2016.01.13 Brian Elliott Finley
+#   - Taken from 95iscsi and modified -BEF-
+
+
+# We depend on network modules being loaded
+[ "$1" = "-d" ] && echo network
+
+# If our prerequisites are not met, fail anyways.
+#which iscsistart hostname iscsi-iname >/dev/null 2>&1 || exit 1
+
+#. $dracutfunctions
+
+[[ $debug ]] && set -x
+
+#is_iscsi() ( 
+#    [[ -L /sys/dev/block/$1 ]] || return
+#    cd "$(readlink -f /sys/dev/block/$1)"
+#    until [[ -d sys || -d iscsi_session ]]; do
+#        cd ..
+#    done
+#    [[ -d iscsi_session ]]
+#)
+#
+#case $1 in
+#    -h) rootdev=$(find_root_block_device)
+#        if [[ $rootdev ]]; then
+#            # root lives on a block device, so we can be more precise about 
+#            # hostonly checking
+#            check_block_and_slaves is_iscsi "$rootdev" || exit 1
+#        else
+#            exit 1
+#        fi ;;
+#esac
+
+exit 0
+
