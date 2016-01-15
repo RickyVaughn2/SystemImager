@@ -1,7 +1,7 @@
 #
 #	"SystemImager"  
 #
-#   Copyright (C) 1999-2015 Brian Elliott Finley
+#   Copyright (C) 1999-2016 Brian Elliott Finley
 #   Copyright (C) 2001-2004 Hewlett-Packard Company <dannf@hp.com>
 #   
 #   Others who have contributed to this code:
@@ -179,6 +179,9 @@ PXE_CONF_DEST     = $(ETC)/systemimager/pxelinux.cfg
 
 KBOOT_CONF_SRC    = etc/kboot.cfg
 KBOOT_CONF_DEST   = $(ETC)/systemimager/kboot.cfg
+
+DRACUT_MODULE_FILES	= dracut/
+DRACUT_MODULE_DEST  = $(USR)/share/dracut/modules.d/
 
 BINARIES := si_mkautoinstallcd si_mkautoinstalldisk si_psh si_pcp si_pushoverrides si_clusterconfig
 SBINARIES := si_addclients si_cpimage si_getimage si_mkdhcpserver si_mkdhcpstatic si_mkautoinstallscript si_mkbootserver si_mvimage si_pushupdate si_pushinstall si_rmimage si_mkrsyncd_conf si_mkclientnetboot si_netbootmond si_mkbootpackage si_monitor si_monitortk si_installbtimage
@@ -676,4 +679,5 @@ PHONY += install_initrd_template
 install_initrd_template:	$(INITRD_TEMPLATE_FILES)
 	mkdir -p $(BOOT_BIN_DEST)
 	rsync -a $(INITRD_TEMPLATE)/ $(BOOT_BIN_DEST)/initrd_template/
+	rsync -a $(DRACUT_MODULE_FILES)/ $(DRACUT_MODULE_DEST)/
 

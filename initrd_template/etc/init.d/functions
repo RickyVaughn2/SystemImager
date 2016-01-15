@@ -2,9 +2,8 @@
 #
 # "SystemImager" 
 #
-#  Copyright (C) 1999-2011 Brian Elliott Finley <brian@thefinleys.com>
+#  Copyright (C) 1999-2016 Brian Elliott Finley <brian@thefinleys.com>
 #
-#  $Id$
 #  vi: set filetype=sh et ts=4:
 #
 #  Others who have contributed to this code:
@@ -229,7 +228,7 @@ count_loop() {
 
   COUNT=$1
 
-  trap 'echo ; echo "Skipping ETHER_SLEEP -> Caught <ctrl>+<c>" ; I=$COUNT' INT
+  trap 'echo ; echo "Skipping ETHER_SLEEP -> Caught <ctrl>+<c>" ; I=$COUNT' SIGINT
 
   I=0
   while [ $I -lt $COUNT ]; do
@@ -238,7 +237,7 @@ count_loop() {
     sleep 1
   done
 
-  trap INT
+  trap SIGINT
 
   logmsg
 }
@@ -789,10 +788,10 @@ start_udevd() {
 ################################################################################
 #
 # Configure loopback interface (may as well)
-ifconfig_loopback() {
+configure_loopback_interface() {
     logmsg
-    logmsg ifconfig_loopback
-    ifconfig lo 127.0.0.1
+    logmsg configure_loopback_interface
+    ip addr add 127.0.0.1 dev lo
 }
 #
 ################################################################################
@@ -882,8 +881,7 @@ read_local_cfg() {
     # END try hard drive
 
     ### BEGIN try floppy ###
-    logmsg "Checking for floppy diskette."
-    logmsg 'YOU MAY SEE SOME "wrong magic" ERRORS HERE, AND THAT IS NORMAL.'
+    logmsg 'Checking for floppy diskette (Seeing "wrong magic" errors here is normal).'
     mkdir -p /floppy
     mount /dev/fd0 /floppy -o ro > /dev/null 2>&1
     if [ $? = 0 ]; then

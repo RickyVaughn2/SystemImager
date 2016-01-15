@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#
+# 2016.01.14 Brian Elliott Finley
+# - created
+
+echo "
+The ifconfig tool is deprecated.  Try one of the following commands
+that use 'ip':
+
+    ip addr
+    ip link
+
+"
+

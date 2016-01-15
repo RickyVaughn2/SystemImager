@@ -300,7 +300,9 @@ sub create_initrd_with_dracut($$$) {
 #       $cmd .= qq( --include ${staging_dir}/ /)         . q( \) . qq(\n);
 #   consider --install for each file in template?
 #     or     --include $template_dir instead of using a $staging_dir?
-        $cmd .= qq( --modules "base dash" \\\n);
+        $cmd .= qq( --modules "base systemimager" \\\n);
+        $cmd .= qq( --nomdadmconf \\\n);
+        $cmd .= qq( --nolvmconf \\\n);
         $cmd .= qq( --include "$templateDir" / \\\n);
         $cmd .= qq(   $boot_dir/initrd.img\n);
 

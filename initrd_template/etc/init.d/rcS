@@ -1,10 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 #
 #   "SystemImager" 
 #
-#   Copyright (C) 1999-2010 Brian Elliott Finley 
-#
-#   $Id$
+#   Copyright (C) 1999-2016 Brian Elliott Finley 
 #
 #   Others who have contributed to this code:
 #       Charles C. Bennett, Jr. <ccb@acm.org>
@@ -28,7 +26,7 @@
 #
 {
 
-mount_initial_filesystems
+#->dracut mount_initial_filesystems
 
 monitor_save_dmesg
 
@@ -36,10 +34,10 @@ get_arch
 
 adjust_arch
 
-ifconfig_loopback
+configure_loopback_interface
 
 # Start udev BEFORE load_my_modules so the modules can load firmware if needed.
-start_udevd
+#->dracut start_udevd
 
 load_my_modules
 

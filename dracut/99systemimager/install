@@ -6,12 +6,25 @@
 #
 
 #dracut_install umount
-#inst iscsistart
-#inst hostname
-#inst iscsi-iname
+
+#
+# For development
+#
+inst chmod
+inst less
+inst head
+inst vim
+
+#
+# Required for operation
+#
+inst grep
+inst_hook cmdline 90 "$moddir/parse-systemimagerroot.sh"
+
+
 #type -P iscsiuio >/dev/null && inst iscsiuio
 #inst_hook cmdline 90 "$moddir/parse-iscsiroot.sh"
-inst_hook cmdline 90 "$moddir/parse-systemimagerroot.sh"
+
 #inst_hook pre-pivot 90 "$moddir/cleanup-iscsi.sh"
 #inst "$moddir/iscsiroot" "/sbin/iscsiroot"
 #inst "$moddir/mount-lun.sh" "/bin/mount-lun.sh"
