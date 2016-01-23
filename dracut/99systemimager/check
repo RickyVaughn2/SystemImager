@@ -4,8 +4,8 @@
 #   - Taken from 95iscsi and modified -BEF-
 
 
-# We depend on network modules being loaded
-[ "$1" = "-d" ] && echo network kernel-modules
+#[ "$1" = "-d" ] && echo network kernel-modules
+[ "$1" = "-d" ] && echo kernel-modules
 
 # If our prerequisites are not met, fail anyways.
 #which iscsistart hostname iscsi-iname >/dev/null 2>&1 || exit 1
