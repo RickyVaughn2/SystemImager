@@ -253,7 +253,7 @@ sub create_initrd_with_dracut($$$) {
 
     #   Modules from include file
     #
-    $file = "/etc/systemimager/UYOK.modules_to_include";
+    $file = "/etc/systemimager/UYOK.kernel_modules_to_include";
     foreach my $entry ( read_in_list_of_things($file) ) {
         $drivers_to_add{$entry} = 1;
     }
@@ -261,7 +261,7 @@ sub create_initrd_with_dracut($$$) {
     #
     #   Modules from exclude file
     #
-    $file = "/etc/systemimager/UYOK.modules_to_exclude";
+    $file = "/etc/systemimager/UYOK.kernel_modules_to_exclude";
     foreach my $entry ( read_in_list_of_things($file) ) {
         $drivers_to_omit{$entry} = 1;
     }
