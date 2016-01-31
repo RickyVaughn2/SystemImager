@@ -189,7 +189,7 @@ sub create_uyok_initrd() {
 #            }
 #        }
 
-        create_initrd_with_dracut($staging_dir, $boot_dir, $arch);
+        create_initrd_with_dracut($staging_dir, $boot_dir, $arch, $uname_r);
         _get_copy_of_kernel( $uname_r, $boot_dir, $custom_kernel );
         _record_arch( $boot_dir );
 
@@ -229,82 +229,110 @@ following:
 }
 
 
-sub create_initrd_with_dracut($$$) {
+sub create_initrd_with_dracut($$$$) {
 
     my $staging_dir     = shift;
     my $boot_dir        = shift;
     my $arch            = shift;
-
-
-    print "Testing 1, 2, 3...\n";
-    print "Assembling dracut command.\n";
+    my $uname_r         = shift;
 
     my $file;
+    my @files;
     my %drivers_to_add;
     my %drivers_to_omit;
+    my %binaries_to_install;
+    my $cmd_line_width = 80;
+    my $line;
+    my $cmd;
+    my $templateDir = "/usr/share/systemimager/boot/$arch/standard/initrd_template/";
 
     #
     #   Running modules
     #
-    $file = "/proc/modules";
-    foreach my $entry ( read_in_list_of_things($file) ) {
-        $drivers_to_add{$entry} = 1;
-    }
+    push @files, "/proc/modules";
+    push @files, "/etc/systemimager/UYOK.kernel_modules_to_include";
+    %drivers_to_add      = read_in_list_of_things(@files);
 
-    #   Modules from include file
-    #
-    $file = "/etc/systemimager/UYOK.kernel_modules_to_include";
-    foreach my $entry ( read_in_list_of_things($file) ) {
-        $drivers_to_add{$entry} = 1;
-    }
-
-    #
-    #   Modules from exclude file
-    #
     $file = "/etc/systemimager/UYOK.kernel_modules_to_exclude";
-    foreach my $entry ( read_in_list_of_things($file) ) {
-        $drivers_to_omit{$entry} = 1;
-    }
+    %drivers_to_omit     = read_in_list_of_things($file);
 
-    my %binaries_to_install;
-    my @missing_binaries;
     $file = "/etc/systemimager/UYOK.binaries_to_include";
-    foreach my $binary ( read_in_list_of_things($file) ) {
-        if( which($binary) ) {
-            $binaries_to_install{$binary} = 1;
-        } else {
-            push(@missing_binaries, $binary);
+    %binaries_to_install = read_in_list_of_things($file);
+
+    my @missing_required_binaries;
+    my @missing_optional_binaries;
+    foreach my $binary ( keys %binaries_to_install ) {
+        if( ! which($binary) ) {
+
+            if($binaries_to_install{$binary} eq 'required') {
+                push(@missing_required_binaries, $binary);
+            } else {
+                push(@missing_optional_binaries, $binary);
+            }
         }
     }
 
-    #if( scalar(@missing_binaries) > 0 ) {
-    if( @missing_binaries ) {
-        give_missing_binaries_warning(\@missing_binaries);
+    if( @missing_required_binaries ) {
+        give_missing_binaries_warning(\@missing_required_binaries);
+        print "The above binaries are required!\n";
+        exit 7; #XXX make this more graceful
+    }
+
+    if( @missing_optional_binaries ) {
+        give_missing_binaries_warning(\@missing_optional_binaries);
     }
 
 
     #
     #   Begin crafting command
-    # XXX handle --flavor -BEF-
-    my $templateDir = "/usr/share/systemimager/boot/$arch/standard/initrd_template/";
-    my $cmd  = qq(dracut --force \\\n);
+    #   XXX handle --flavor -BEF-
+    #
+    $cmd  = qq(dracut --force \\\n);
+        #$cmd .= qq( --verbose \\\n);    #XXX comment out this line prior to packaging
+
+        #
+        #   Kernel modules to add
+        #
         foreach my $entry (sort keys %drivers_to_add) {
-            $cmd .= qq( --add-drivers "$entry" \\\n);
+            $cmd .= qq( --add-drivers "$entry" \\\n) if(%drivers_to_omit);
         }
+
+
+        #
+        #   Kernel modules to omit
+        #
         foreach my $entry (sort keys %drivers_to_omit) {
-            $cmd .= qq( --omit-drivers "$entry" \\\n);
+            $cmd .= qq( --omit-drivers "$entry" \\\n) if(%drivers_to_omit);
         }
-        foreach my $binary (sort keys %binaries_to_install) {
-            $cmd .= qq( --install "$binary" \\\n);
+
+
+        #
+        #   Binaries to install
+        #
+        $cmd .= qq( --install \\\n) if(%binaries_to_install);
+        $line = qq(");  # single double-quote here is important
+        foreach my $entry (sort keys %binaries_to_install) {
+            # 4 spaces, plus current line, plus new entry
+            if( (4 + (length $line) + (length $entry)) <= $cmd_line_width ) {
+                $line .= qq($entry );
+            } else {
+                # Finish this line
+                $line =~ s/ $//;
+                $cmd .= qq(    $line \\\n);
+                # and start a new one
+                $line = qq($entry );
+            }
         }
-#       $cmd .= qq( --include ${staging_dir}/ /)         . q( \) . qq(\n);
-#   consider --install for each file in template?
-#     or     --include $template_dir instead of using a $staging_dir?
+        # Finish the last line for this argument
+        $line =~ s/ $//;
+        $cmd .= qq(    $line" \\\n);    # single double-quote here is important
+
+
         $cmd .= qq( --modules "base systemimager" \\\n);
         $cmd .= qq( --nomdadmconf \\\n);
         $cmd .= qq( --nolvmconf \\\n);
         $cmd .= qq( --include "$templateDir" / \\\n);
-        $cmd .= qq(   $boot_dir/initrd.img\n);
+        $cmd .= qq(   $boot_dir/initrd.img  $uname_r\n);
 
     run_cmd($cmd, 1);
 exit 1;
@@ -706,7 +734,9 @@ sub get_uname_r {
 
 
 #
-#   Usage:  my @array = read_list_of_things($file);
+#   Usage:  my %hash = read_list_of_things($file);
+#           my %hash = read_list_of_things($file, $file2, $file3, etc.);
+#           my %hash = read_list_of_things(@files);
 #
 #       Where:
 #       - Each line that is not blank or a comment will be included in @array.
@@ -714,30 +744,30 @@ sub get_uname_r {
 #
 sub read_in_list_of_things() {
 
-    my $file            = shift;
+    my @files   = @_;
 
-    my @things;
+    my %things;
 
-    if (-e $file) {
-        open(FILE, "<$file") or die("Couldn't open $file for reading\n");
-        while(<FILE>) {
+    foreach my $file (@files) {
+        next if (! $file);
+        if (-e $file) {
+            open(FILE, "<$file") or die("Couldn't open $file for reading\n");
+            while(<FILE>) {
+                s/^\s+//;               # strip off leading spaces
+                next if(m/^(#|\s|$)/);  # skip comments and empty lines
+                chomp;
 
-            next if(m/^(#|\s|$)/);
-            chomp;
-
-            my $thing = $_;
-            $thing   =~ s/(^\s+|\s+.*$)//g;
-
-#XXX            print "Thing: $thing\n" if($verbose);
-            push(@things, $thing);
+                my ($thing, $details) = split(/ /, $_, 2);
+                if(! $details) { $details = 'none'; }
+                $things{$thing} = $details;
+            }
+            close(FILE);
+        } else {
+            print STDERR qq(WARNING: $file doesn't exist!\n);
         }
-        close(FILE);
+    } 
 
-    } else {
-        print STDERR qq(WARNING: $file doesn't exist!\n);
-    }
-    
-    return @things;
+    return %things;
 }
 
 

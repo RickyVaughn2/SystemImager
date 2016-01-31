@@ -12,6 +12,20 @@
 #     install binaries for filesystems you do not use.
 #
 
+#
+# Required for operation
+#
+grep    required
+ip      required
+
+#
+# For development
+#
+chmod
+less
+head
+vim
+
 # E2FSPROGS   
 mke2fs
 mkfs.ext2

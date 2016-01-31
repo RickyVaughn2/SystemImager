@@ -10,15 +10,16 @@
 #
 # For development
 #
-inst chmod
-inst less
-inst head
-inst vim
+#inst chmod
+#inst less
+#inst head
+#inst vim
 
 #
 # Required for operation
 #
-inst grep
+#inst grep
+#inst ip
 inst_hook cmdline 90 "$moddir/parse-systemimagerroot.sh"
 
 

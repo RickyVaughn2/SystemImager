@@ -317,8 +317,8 @@ install_client: install_client_man install_client_libs
 .PHONY:	install_common
 install_common:	install_common_man install_common_libs
 	mkdir -p $(ETC)/systemimager
-	$(SI_INSTALL) -b -m 644 etc/UYOK.modules_to_exclude  $(ETC)/systemimager
-	$(SI_INSTALL) -b -m 644 etc/UYOK.modules_to_include  $(ETC)/systemimager
+	$(SI_INSTALL) -b -m 644 etc/UYOK.kernel_modules_to_exclude  $(ETC)/systemimager
+	$(SI_INSTALL) -b -m 644 etc/UYOK.kernel_modules_to_include  $(ETC)/systemimager
 	$(SI_INSTALL) -b -m 644 etc/UYOK.binaries_to_include $(ETC)/systemimager
 	mkdir -p $(BIN)
 	$(foreach binary, $(COMMON_BINARIES), \
