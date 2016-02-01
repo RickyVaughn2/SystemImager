@@ -723,6 +723,9 @@ parse_tmpfs_opts() {
 #
 mount_initial_filesystems() {
 
+echo "FINLEY:  Should be handled by dracut now."
+shellout
+
     # Much of this taken from "init" from an Ubuntu Lucid initrd.img
     logmsg
     logmsg mount_initial_filesystems
@@ -1090,6 +1093,7 @@ ping_test() {
 #
 ################################################################################
 #
+# XXX BEF figure out how this works with dracut
 start_syslogd() {
     logmsg
     logmsg start_syslogd
@@ -1581,7 +1585,7 @@ start_ssh() {
 #
 #   Usage: send_monitor_msg "var=$msg"
 #
-
+# XXX BEF modify to use "ip" instead of "ifconfig"
 send_monitor_msg() {
     if [ -z $MONITOR_SERVER ]; then
         return
