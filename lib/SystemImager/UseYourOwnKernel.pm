@@ -24,6 +24,7 @@ use strict;
 use File::Basename;
 use SystemImager::Config qw($config);
 use SystemImager::Common qw(which);
+use File::Temp qw/ :mktemp /;
 
 
 our $verbose;
@@ -240,15 +241,14 @@ sub create_initrd_with_dracut($$$$) {
     my @files;
     my %drivers_to_add;
     my %drivers_to_omit;
-    my %binaries_to_install;
+    my %binaries_to_include;
     my $cmd_line_width = 80;
     my $line;
     my $cmd;
     my $templateDir = "/usr/share/systemimager/boot/$arch/standard/initrd_template/";
 
-    #
-    #   Running modules
-    #
+
+
     push @files, "/proc/modules";
     push @files, "/etc/systemimager/UYOK.kernel_modules_to_include";
     %drivers_to_add      = read_in_list_of_things(@files);
@@ -257,17 +257,19 @@ sub create_initrd_with_dracut($$$$) {
     %drivers_to_omit     = read_in_list_of_things($file);
 
     $file = "/etc/systemimager/UYOK.binaries_to_include";
-    %binaries_to_install = read_in_list_of_things($file);
+    %binaries_to_include = read_in_list_of_things($file);
 
     my @missing_required_binaries;
     my @missing_optional_binaries;
-    foreach my $binary ( keys %binaries_to_install ) {
+    foreach my $binary ( keys %binaries_to_include ) {
         if( ! which($binary) ) {
-
-            if($binaries_to_install{$binary} eq 'required') {
+            if($binaries_to_include{$binary} eq 'required') {
                 push(@missing_required_binaries, $binary);
             } else {
                 push(@missing_optional_binaries, $binary);
+
+                # Remove it from the list we'll try to include with dracut
+                delete $binaries_to_include{$binary};
             }
         }
     }
@@ -284,34 +286,63 @@ sub create_initrd_with_dracut($$$$) {
 
 
     #
-    #   Begin crafting command
-    #   XXX handle --flavor -BEF-
+    #   Create dracut.conf file
     #
-    $cmd  = qq(dracut --force \\\n);
-        #$cmd .= qq( --verbose \\\n);    #XXX comment out this line prior to packaging
+    my $dracut_conf = mktemp('/tmp/systemimager-dracut.conf.XXXX');
+    open(DRACUT_CONF,">$dracut_conf") or die("Couldn't open $dracut_conf for writing.");
+
+        print DRACUT_CONF qq(# SystemImager created dracut.conf file\n);
+        print DRACUT_CONF qq(\n);
+        print DRACUT_CONF qq(# Specific list of dracut modules to use\n);
+        print DRACUT_CONF qq(dracutmodules+="base systemimager"\n);
+        print DRACUT_CONF qq(\n);
+        print DRACUT_CONF qq(# additional kernel modules to the default\n);
 
         #
         #   Kernel modules to add
         #
         foreach my $entry (sort keys %drivers_to_add) {
-            $cmd .= qq( --add-drivers "$entry" \\\n) if(%drivers_to_omit);
+            print DRACUT_CONF qq(add_drivers+="$entry"\n);
         }
-
 
         #
         #   Kernel modules to omit
         #
         foreach my $entry (sort keys %drivers_to_omit) {
-            $cmd .= qq( --omit-drivers "$entry" \\\n) if(%drivers_to_omit);
+            print DRACUT_CONF qq(omit_drivers+="$entry"\n);
         }
 
+        print DRACUT_CONF qq(\n);
+        print DRACUT_CONF qq(# list of kernel filesystem modules to be included in the generic initramfs\n);
+        print DRACUT_CONF qq(#filesystems+=""\n);
+        print DRACUT_CONF qq(\n);
+        print DRACUT_CONF qq(# build initrd only to boot current hardware\n);
+        print DRACUT_CONF qq(#hostonly="yes"\n);
+        print DRACUT_CONF qq(#\n);
+        print DRACUT_CONF qq(\n);
+        print DRACUT_CONF qq(# install local /etc/mdadm.conf\n);
+        print DRACUT_CONF qq(mdadmconf="no"\n);
+        print DRACUT_CONF qq(\n);
+        print DRACUT_CONF qq(# install local /etc/lvm/lvm.conf\n);
+        print DRACUT_CONF qq(lvmconf="no"\n);
+
+    close(DRACUT_CONF);
+
+
+
+    #
+    #   Begin crafting command
+    #   XXX handle --flavor -BEF-
+    #
+    $cmd  = qq(dracut --force --conf $dracut_conf \\\n);
+        #$cmd .= qq( --verbose \\\n);    #XXX comment out this line prior to packaging
 
         #
         #   Binaries to install
         #
-        $cmd .= qq( --install \\\n) if(%binaries_to_install);
+        $cmd .= qq( --install \\\n) if(%binaries_to_include);
         $line = qq(");  # single double-quote here is important
-        foreach my $entry (sort keys %binaries_to_install) {
+        foreach my $entry (sort keys %binaries_to_include) {
             # 4 spaces, plus current line, plus new entry
             if( (4 + (length $line) + (length $entry)) <= $cmd_line_width ) {
                 $line .= qq($entry );
@@ -327,10 +358,6 @@ sub create_initrd_with_dracut($$$$) {
         $line =~ s/ $//;
         $cmd .= qq(    $line" \\\n);    # single double-quote here is important
 
-
-        $cmd .= qq( --modules "base systemimager" \\\n);
-        $cmd .= qq( --nomdadmconf \\\n);
-        $cmd .= qq( --nolvmconf \\\n);
         $cmd .= qq( --include "$templateDir" / \\\n);
         $cmd .= qq(   $boot_dir/initrd.img  $uname_r\n);
 
@@ -757,7 +784,8 @@ sub read_in_list_of_things() {
                 next if(m/^(#|\s|$)/);  # skip comments and empty lines
                 chomp;
 
-                my ($thing, $details) = split(/ /, $_, 2);
+                my ($thing, $details) = split;
+
                 if(! $details) { $details = 'none'; }
                 $things{$thing} = $details;
             }
